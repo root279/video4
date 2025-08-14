@@ -151,38 +151,100 @@ export function Cart() {
         </div>
 
         {/* Order Summary */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">
-            Resumen del Pedido
-          </h3>
-          
-          <div className="space-y-3 mb-6">
-            <div className="flex justify-between text-gray-600">
-              <span>Total de elementos:</span>
-              <span>{state.total}</span>
-            </div>
-            <div className="flex justify-between text-gray-600">
-              <span>Películas:</span>
-              <span>{state.items.filter(item => item.type === 'movie').length}</span>
-            </div>
-            <div className="flex justify-between text-gray-600">
-              <span>Series/Anime:</span>
-              <span>{state.items.filter(item => item.type === 'tv').length}</span>
+        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
+            <div className="flex items-center justify-between">
+              <h3 className="text-2xl font-bold flex items-center">
+                <div className="bg-white/20 p-2 rounded-lg mr-3">
+                  <ShoppingCart className="h-6 w-6" />
+                </div>
+                Resumen del Pedido
+              </h3>
+              <div className="text-right">
+                <div className="text-3xl font-bold">{state.total}</div>
+                <div className="text-sm opacity-90">elementos</div>
+              </div>
             </div>
           </div>
-
-          {/* WhatsApp Button */}
-          <button
-            onClick={handleWhatsAppSend}
-            className="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-4 rounded-lg font-medium transition-colors flex items-center justify-center"
-          >
-            <MessageCircle className="mr-2 h-5 w-5" />
-            Enviar Pedido por WhatsApp
-          </button>
           
-          <p className="text-sm text-gray-500 mt-3 text-center">
-            Tu pedido será enviado al número +53 5469 0878
-          </p>
+          <div className="p-6">
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-blue-600 mb-1">Películas</p>
+                    <p className="text-2xl font-bold text-blue-800">
+                      {state.items.filter(item => item.type === 'movie').length}
+                    </p>
+                  </div>
+                  <div className="bg-blue-100 p-3 rounded-lg">
+                    <span className="text-2xl">🎬</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-purple-600 mb-1">Series/Anime</p>
+                    <p className="text-2xl font-bold text-purple-800">
+                      {state.items.filter(item => item.type === 'tv').length}
+                    </p>
+                  </div>
+                  <div className="bg-purple-100 p-3 rounded-lg">
+                    <span className="text-2xl">📺</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Statistics */}
+            <div className="bg-gray-50 rounded-xl p-4 mb-6">
+              <h4 className="font-semibold text-gray-900 mb-3">Estadísticas del Pedido</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Promedio de calificación:</span>
+                  <div className="flex items-center">
+                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 mr-1" />
+                    <span className="font-medium">
+                      {state.items.length > 0 
+                        ? (state.items.reduce((acc, item) => acc + item.vote_average, 0) / state.items.length).toFixed(1)
+                        : '0.0'
+                      }
+                    </span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Contenido más reciente:</span>
+                  <span className="font-medium">
+                    {state.items.length > 0 
+                      ? Math.max(...state.items.map(item => {
+                          const date = item.release_date || item.first_air_date;
+                          return date ? new Date(date).getFullYear() : 0;
+                        }))
+                      : 'N/A'
+                    }
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* WhatsApp Button */}
+            <button
+              onClick={handleWhatsAppSend}
+              className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center transform hover:scale-105 hover:shadow-lg"
+            >
+              <MessageCircle className="mr-3 h-6 w-6" />
+              Enviar Pedido por WhatsApp
+            </button>
+            
+            <div className="mt-4 p-4 bg-green-50 rounded-xl border border-green-100">
+              <p className="text-sm text-green-700 text-center flex items-center justify-center">
+                <span className="mr-2">📱</span>
+                Tu pedido será enviado al número +53 5469 0878
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
