@@ -1,23 +1,30 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import type { CartItem } from '../types/movie';
 
+interface SeriesCartItem extends CartItem {
+  selectedSeasons?: number[];
+}
+
 interface CartState {
-  items: CartItem[];
+  items: SeriesCartItem[];
   total: number;
 }
 
 type CartAction = 
-  | { type: 'ADD_ITEM'; payload: CartItem }
+  | { type: 'ADD_ITEM'; payload: SeriesCartItem }
   | { type: 'REMOVE_ITEM'; payload: number }
+  | { type: 'UPDATE_SEASONS'; payload: { id: number; seasons: number[] } }
   | { type: 'CLEAR_CART' }
-  | { type: 'LOAD_CART'; payload: CartItem[] };
+  | { type: 'LOAD_CART'; payload: SeriesCartItem[] };
 
 interface CartContextType {
   state: CartState;
-  addItem: (item: CartItem) => void;
+  addItem: (item: SeriesCartItem) => void;
   removeItem: (id: number) => void;
+  updateSeasons: (id: number, seasons: number[]) => void;
   clearCart: () => void;
   isInCart: (id: number) => boolean;
+  getItemSeasons: (id: number) => number[];
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -32,6 +39,15 @@ function cartReducer(state: CartState, action: CartAction): CartState {
         ...state,
         items: [...state.items, action.payload],
         total: state.total + 1
+      };
+    case 'UPDATE_SEASONS':
+      return {
+        ...state,
+        items: state.items.map(item => 
+          item.id === action.payload.id 
+            ? { ...item, selectedSeasons: action.payload.seasons }
+            : item
+        )
       };
     case 'REMOVE_ITEM':
       return {
@@ -73,12 +89,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('movieCart', JSON.stringify(state.items));
   }, [state.items]);
 
-  const addItem = (item: CartItem) => {
+  const addItem = (item: SeriesCartItem) => {
     dispatch({ type: 'ADD_ITEM', payload: item });
   };
 
   const removeItem = (id: number) => {
     dispatch({ type: 'REMOVE_ITEM', payload: id });
+  };
+
+  const updateSeasons = (id: number, seasons: number[]) => {
+    dispatch({ type: 'UPDATE_SEASONS', payload: { id, seasons } });
   };
 
   const clearCart = () => {
@@ -89,8 +109,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return state.items.some(item => item.id === id);
   };
 
+  const getItemSeasons = (id: number): number[] => {
+    const item = state.items.find(item => item.id === id);
+    return item?.selectedSeasons || [];
+  };
+
   return (
-    <CartContext.Provider value={{ state, addItem, removeItem, clearCart, isInCart }}>
+    <CartContext.Provider value={{ state, addItem, removeItem, updateSeasons, clearCart, isInCart, getItemSeasons }}>
       {children}
     </CartContext.Provider>
   );

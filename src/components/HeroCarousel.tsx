@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Star, Calendar, Play, Pause } from 'lucide-react';
+import { tmdbService } from '../services/tmdb';
 import { IMAGE_BASE_URL, BACKDROP_SIZE } from '../config/api';
-import type { Movie, TVShow } from '../types/movie';
+import type { Movie, TVShow, Video } from '../types/movie';
 
 interface HeroCarouselProps {
   items: (Movie | TVShow)[];
@@ -12,8 +14,44 @@ export function HeroCarousel({ items }: HeroCarouselProps) {
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [itemVideos, setItemVideos] = useState<{ [key: number]: Video[] }>({});
 
   const AUTOPLAY_INTERVAL = 6000; // 6 seconds
+
+  // Cargar videos para cada item
+  useEffect(() => {
+    const loadVideos = async () => {
+      const videoPromises = items.map(async (item) => {
+        try {
+          const isMovie = 'title' in item;
+          const videoData = isMovie 
+            ? await tmdbService.getMovieVideos(item.id)
+            : await tmdbService.getTVShowVideos(item.id);
+          
+          const trailers = videoData.results.filter(
+            video => video.site === 'YouTube' && (video.type === 'Trailer' || video.type === 'Teaser')
+          );
+          
+          return { id: item.id, videos: trailers };
+        } catch (error) {
+          console.error(`Error loading videos for item ${item.id}:`, error);
+          return { id: item.id, videos: [] };
+        }
+      });
+
+      const results = await Promise.all(videoPromises);
+      const videosMap = results.reduce((acc, { id, videos }) => {
+        acc[id] = videos;
+        return acc;
+      }, {} as { [key: number]: Video[] });
+      
+      setItemVideos(videosMap);
+    };
+
+    if (items.length > 0) {
+      loadVideos();
+    }
+  }, [items]);
 
   const goToPrevious = useCallback(() => {
     if (isTransitioning) return;
@@ -99,6 +137,17 @@ export function HeroCarousel({ items }: HeroCarouselProps) {
   const title = 'title' in currentItem ? currentItem.title : currentItem.name;
   const releaseDate = 'release_date' in currentItem ? currentItem.release_date : currentItem.first_air_date;
   const year = releaseDate ? new Date(releaseDate).getFullYear() : 'N/A';
+  const itemType = 'title' in currentItem ? 'movie' : 'tv';
+  const currentVideos = itemVideos[currentItem.id] || [];
+  const hasTrailer = currentVideos.length > 0;
+
+  const handleWatchNow = () => {
+    if (hasTrailer) {
+      const trailer = currentVideos[0];
+      const youtubeUrl = `https://www.youtube.com/watch?v=${trailer.key}`;
+      window.open(youtubeUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
 
   return (
     <div className="relative h-96 md:h-[600px] overflow-hidden group">
@@ -187,13 +236,24 @@ export function HeroCarousel({ items }: HeroCarouselProps) {
               </p>
 
               <div className="flex space-x-4">
-                <button className="bg-white text-black px-8 py-4 rounded-full font-semibold hover:bg-white/90 transition-all duration-300 hover:scale-105 flex items-center">
+                <button 
+                  onClick={handleWatchNow}
+                  disabled={!hasTrailer}
+                  className={`px-8 py-4 rounded-full font-semibold transition-all duration-300 hover:scale-105 flex items-center ${
+                    hasTrailer 
+                      ? 'bg-white text-black hover:bg-white/90' 
+                      : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                  }`}
+                >
                   <Play className="h-5 w-5 mr-2" />
-                  Ver Ahora
+                  {hasTrailer ? 'Ver Tráiler' : 'Sin Tráiler'}
                 </button>
-                <button className="bg-white/20 backdrop-blur-sm text-white px-8 py-4 rounded-full font-semibold hover:bg-white/30 transition-all duration-300 hover:scale-105">
+                <Link 
+                  to={`/${itemType}/${currentItem.id}`}
+                  className="bg-white/20 backdrop-blur-sm text-white px-8 py-4 rounded-full font-semibold hover:bg-white/30 transition-all duration-300 hover:scale-105 flex items-center"
+                >
                   Más Info
-                </button>
+                </Link>
               </div>
             </div>
           </div>

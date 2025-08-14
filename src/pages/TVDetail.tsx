@@ -19,10 +19,18 @@ export function TVDetail() {
   const [showSeasonSelector, setShowSeasonSelector] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { addItem, removeItem, isInCart } = useCart();
+  const { addItem, removeItem, updateSeasons, isInCart, getItemSeasons } = useCart();
 
   const tvId = parseInt(id || '0');
   const inCart = isInCart(tvId);
+
+  // Cargar temporadas seleccionadas si ya está en el carrito
+  useEffect(() => {
+    if (inCart) {
+      const savedSeasons = getItemSeasons(tvId);
+      setSelectedSeasons(savedSeasons);
+    }
+  }, [inCart, tvId, getItemSeasons]);
 
   useEffect(() => {
     const fetchTVData = async () => {
@@ -82,17 +90,14 @@ export function TVDetail() {
   const handleCartAction = () => {
     if (!tvShow) return;
 
-    const seasonsText = selectedSeasons.length > 0 
-      ? ` (Temporadas: ${selectedSeasons.sort((a, b) => a - b).join(', ')})`
-      : '';
-
-    const cartItem: CartItem = {
+    const cartItem: CartItem & { selectedSeasons?: number[] } = {
       id: tvShow.id,
-      title: tvShow.name + seasonsText,
+      title: tvShow.name,
       poster_path: tvShow.poster_path,
       type: 'tv',
       first_air_date: tvShow.first_air_date,
       vote_average: tvShow.vote_average,
+      selectedSeasons: selectedSeasons.length > 0 ? selectedSeasons : undefined,
     };
 
     if (inCart) {
@@ -101,6 +106,19 @@ export function TVDetail() {
       addItem(cartItem);
     }
   };
+
+  const handleSeasonsUpdate = () => {
+    if (inCart && tvShow) {
+      updateSeasons(tvShow.id, selectedSeasons);
+    }
+  };
+
+  // Actualizar temporadas cuando cambie la selección y esté en el carrito
+  useEffect(() => {
+    if (inCart) {
+      handleSeasonsUpdate();
+    }
+  }, [selectedSeasons, inCart]);
 
   if (loading) {
     return (

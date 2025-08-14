@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Trash2, Star, Calendar, MessageCircle, ArrowLeft } from 'lucide-react';
+import { ShoppingCart, Trash2, Star, Calendar, MessageCircle, ArrowLeft, Edit3, Tv } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { sendToWhatsApp } from '../utils/whatsapp';
 import { IMAGE_BASE_URL, POSTER_SIZE } from '../config/api';
@@ -10,7 +10,14 @@ export function Cart() {
 
   const handleWhatsAppSend = () => {
     if (state.items.length > 0) {
-      sendToWhatsApp(state.items);
+      // Formatear items para WhatsApp incluyendo temporadas seleccionadas
+      const formattedItems = state.items.map(item => ({
+        ...item,
+        title: item.type === 'tv' && item.selectedSeasons && item.selectedSeasons.length > 0
+          ? `${item.title} (Temporadas: ${item.selectedSeasons.sort((a, b) => a - b).join(', ')})`
+          : item.title
+      }));
+      sendToWhatsApp(formattedItems);
     }
   };
 
@@ -118,6 +125,11 @@ export function Cart() {
                     >
                       <h3 className="text-lg font-semibold text-gray-900 truncate">
                         {item.title}
+                        {item.type === 'tv' && item.selectedSeasons && item.selectedSeasons.length > 0 && (
+                          <span className="text-sm font-normal text-purple-600 ml-2">
+                            (Temporadas: {item.selectedSeasons.sort((a, b) => a - b).join(', ')})
+                          </span>
+                        )}
                       </h3>
                     </Link>
                     
@@ -125,6 +137,12 @@ export function Cart() {
                       <span className="capitalize bg-gray-100 px-2 py-1 rounded text-xs font-medium">
                         {item.type === 'movie' ? 'Película' : 'Serie'}
                       </span>
+                      {item.type === 'tv' && item.selectedSeasons && item.selectedSeasons.length > 0 && (
+                        <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-medium flex items-center">
+                          <Tv className="h-3 w-3 mr-1" />
+                          {item.selectedSeasons.length} temp.
+                        </span>
+                      )}
                       <div className="flex items-center">
                         <Calendar className="h-4 w-4 mr-1" />
                         <span>{getItemYear(item)}</span>
@@ -136,14 +154,25 @@ export function Cart() {
                     </div>
                   </div>
 
-                  {/* Remove Button */}
-                  <button
-                    onClick={() => removeItem(item.id)}
-                    className="flex-shrink-0 p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full transition-colors"
-                    title="Eliminar del carrito"
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </button>
+                  {/* Action Buttons */}
+                  <div className="flex-shrink-0 flex items-center space-x-2">
+                    {item.type === 'tv' && (
+                      <Link
+                        to={getItemUrl(item)}
+                        className="p-2 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded-full transition-colors"
+                        title="Editar temporadas"
+                      >
+                        <Edit3 className="h-4 w-4" />
+                      </Link>
+                    )}
+                    <button
+                      onClick={() => removeItem(item.id)}
+                      className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full transition-colors"
+                      title="Eliminar del carrito"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -243,6 +272,11 @@ export function Cart() {
                 <span className="mr-2">📱</span>
                 Tu pedido será enviado al número +53 5469 0878
               </p>
+              {state.items.some(item => item.type === 'tv' && item.selectedSeasons) && (
+                <p className="text-xs text-green-600 text-center mt-2">
+                  * Las temporadas seleccionadas se incluirán en el mensaje
+                </p>
+              )}
             </div>
           </div>
         </div>

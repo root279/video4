@@ -109,6 +109,7 @@ export interface CartItem {
   release_date?: string;
   first_air_date?: string;
   vote_average: number;
+  selectedSeasons?: number[];
 }
 
 export interface APIResponse<T> {
