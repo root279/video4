@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Star, Calendar, Tv, Plus, Check, Play, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Star, Calendar, Tv, Plus, X, Play, ChevronDown } from 'lucide-react';
 import { tmdbService } from '../services/tmdb';
 import { VideoPlayer } from '../components/VideoPlayer';
+import { PriceCard } from '../components/PriceCard';
+import { CastSection } from '../components/CastSection';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { useCart } from '../context/CartContext';
 import { IMAGE_BASE_URL, BACKDROP_SIZE } from '../config/api';
-import type { TVShowDetails, Video, CartItem, Season } from '../types/movie';
+import type { TVShowDetails, Video, CartItem, Season, CastMember } from '../types/movie';
 
 export function TVDetail() {
   const { id } = useParams<{ id: string }>();
   const [tvShow, setTVShow] = useState<TVShowDetails | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
+  const [cast, setCast] = useState<CastMember[]>([]);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [showVideo, setShowVideo] = useState(false);
   const [selectedSeasons, setSelectedSeasons] = useState<number[]>([]);
@@ -23,6 +26,11 @@ export function TVDetail() {
 
   const tvId = parseInt(id || '0');
   const inCart = isInCart(tvId);
+
+  // Detectar si es anime
+  const isAnime = tvShow?.original_language === 'ja' || 
+                 (tvShow?.genres && tvShow.genres.some(g => g.name.toLowerCase().includes('animat'))) ||
+                 tvShow?.name?.toLowerCase().includes('anime');
 
   // Cargar temporadas seleccionadas si ya está en el carrito
   useEffect(() => {
@@ -36,12 +44,14 @@ export function TVDetail() {
     const fetchTVData = async () => {
       try {
         setLoading(true);
-        const [tvData, videoData] = await Promise.all([
+        const [tvData, videoData, creditsData] = await Promise.all([
           tmdbService.getTVShowDetails(tvId),
-          tmdbService.getTVShowVideos(tvId)
+          tmdbService.getTVShowVideos(tvId),
+          tmdbService.getTVShowCredits(tvId)
         ]);
 
         setTVShow(tvData);
+        setCast(creditsData.cast || []);
         
         // Filter for trailers and teasers
         const trailers = videoData.results.filter(
@@ -87,8 +97,27 @@ export function TVDetail() {
     setSelectedSeasons([]);
   };
 
+  // Determinar si el botón debe estar habilitado
+  const isAddToCartEnabled = () => {
+    if (!tvShow) return false;
+    
+    const validSeasons = tvShow.seasons.filter(season => season.season_number > 0);
+    
+    // Siempre habilitar el botón - si no hay temporadas seleccionadas, se seleccionará la primera automáticamente
+    return validSeasons.length > 0;
+  };
+
   const handleCartAction = () => {
     if (!tvShow) return;
+
+    const validSeasons = tvShow.seasons.filter(season => season.season_number > 0);
+    
+    // Si no hay temporadas seleccionadas, seleccionar la primera por defecto
+    let seasonsToAdd = selectedSeasons;
+    if (selectedSeasons.length === 0 && validSeasons.length > 0) {
+      seasonsToAdd = [1];
+      setSelectedSeasons([1]);
+    }
 
     const cartItem: CartItem & { selectedSeasons?: number[] } = {
       id: tvShow.id,
@@ -97,7 +126,9 @@ export function TVDetail() {
       type: 'tv',
       first_air_date: tvShow.first_air_date,
       vote_average: tvShow.vote_average,
-      selectedSeasons: selectedSeasons.length > 0 ? selectedSeasons : undefined,
+      selectedSeasons: seasonsToAdd,
+      original_language: tvShow.original_language,
+      genre_ids: tvShow.genres.map(g => g.id),
     };
 
     if (inCart) {
@@ -120,6 +151,17 @@ export function TVDetail() {
     }
   }, [selectedSeasons, inCart]);
 
+  // Auto-seleccionar la única temporada si solo hay una
+  useEffect(() => {
+    if (tvShow && !inCart && selectedSeasons.length === 0) {
+      const validSeasons = tvShow.seasons.filter(season => season.season_number > 0);
+      if (validSeasons.length >= 1) {
+        // Siempre seleccionar la primera temporada por defecto
+        setSelectedSeasons([1]);
+      }
+    }
+  }, [tvShow, inCart]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -139,6 +181,9 @@ export function TVDetail() {
   const backdropUrl = tvShow.backdrop_path
     ? `${IMAGE_BASE_URL}/${BACKDROP_SIZE}${tvShow.backdrop_path}`
     : 'https://images.unsplash.com/photo-1489599843253-c76cc4bcb8cf?w=1280&h=720&fit=crop&crop=center';
+
+  const validSeasons = tvShow.seasons.filter(season => season.season_number > 0);
+  const hasMultipleSeasons = validSeasons.length > 1;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -200,8 +245,8 @@ export function TVDetail() {
             {/* Overview */}
             <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-xl border border-gray-100 p-8 mb-8 transform hover:scale-[1.02] transition-all duration-300">
               <div className="flex items-center mb-6">
-                <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-3 rounded-xl mr-4">
-                  <span className="text-2xl">📖</span>
+                <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-3 rounded-xl mr-4 shadow-lg">
+                  <span className="text-2xl">📚</span>
                 </div>
                 <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                   Sinopsis
@@ -216,6 +261,9 @@ export function TVDetail() {
                 </div>
               )}
             </div>
+
+            {/* Cast Section */}
+            <CastSection cast={cast} title="Reparto Principal" />
 
             {/* Videos */}
             {videos.length > 0 && (
@@ -293,12 +341,12 @@ export function TVDetail() {
               
               <div className="p-6">
               {/* Season Selection */}
-              {tvShow.seasons && tvShow.seasons.filter(s => s.season_number > 0).length > 1 && (
+              {hasMultipleSeasons && (
                 <div className="mb-8">
                   <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100 mb-4">
                     <div className="flex items-center mb-2">
                       <div className="bg-purple-100 p-2 rounded-lg mr-3">
-                        <span className="text-sm">📋</span>
+                        <span className="text-sm">📝</span>
                       </div>
                       <h4 className="font-semibold text-purple-900">Seleccionar Temporadas</h4>
                     </div>
@@ -339,8 +387,7 @@ export function TVDetail() {
                           Ninguna
                         </button>
                       </div>
-                      {tvShow.seasons
-                        .filter(season => season.season_number > 0)
+                      {validSeasons
                         .map((season) => (
                           <label
                             key={season.id}
@@ -368,18 +415,45 @@ export function TVDetail() {
                 </div>
               )}
 
+              {/* Mostrar información de temporada única */}
+              {!hasMultipleSeasons && validSeasons.length === 1 && (
+                <div className="mb-6">
+                  <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-4 border border-green-200">
+                    <div className="flex items-center mb-2">
+                      <div className="bg-green-100 p-2 rounded-lg mr-3">
+                        <span className="text-sm">✅</span>
+                      </div>
+                      <h4 className="font-semibold text-green-900">Temporada Única</h4>
+                    </div>
+                    <p className="text-sm text-green-700 ml-11 mb-3">
+                      Esta serie tiene una sola temporada que se incluirá automáticamente
+                    </p>
+                    <div className="ml-11 bg-white rounded-lg p-3 border border-green-200">
+                      <p className="font-medium text-gray-900">{validSeasons[0].name}</p>
+                      <p className="text-sm text-gray-600">
+                        {validSeasons[0].episode_count} episodios
+                        {validSeasons[0].air_date && ` • ${new Date(validSeasons[0].air_date).getFullYear()}`}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <button
                 onClick={handleCartAction}
-                className={`w-full mb-6 px-6 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center transform hover:scale-105 hover:shadow-lg ${
-                  inCart
-                    ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white'
-                    : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white'
+                disabled={!isAddToCartEnabled()}
+                className={`w-full mb-6 px-6 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center transform ${
+                  !isAddToCartEnabled()
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : inCart
+                      ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white hover:scale-105 hover:shadow-lg'
+                      : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white hover:scale-105 hover:shadow-lg'
                 }`}
               >
                 {inCart ? (
                   <>
-                    <Check className="mr-2 h-5 w-5" />
-                    Agregada al Carrito
+                    <X className="mr-2 h-5 w-5" />
+                    Retirar del Carrito
                   </>
                 ) : (
                   <>
@@ -389,11 +463,28 @@ export function TVDetail() {
                 )}
               </button>
 
+              {/* Mensaje informativo sobre selección automática */}
+              {hasMultipleSeasons && selectedSeasons.length === 0 && !inCart && (
+                <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-700 text-center">
+                    ℹ️ Se agregará la primera temporada por defecto. Puedes seleccionar más temporadas arriba.
+                  </p>
+                </div>
+              )}
+
+              {/* Price Card */}
+              <div className="mb-6">
+                <PriceCard 
+                  type="tv" 
+                  selectedSeasons={selectedSeasons}
+                  isAnime={isAnime}
+                />
+              </div>
               <div className="space-y-6">
                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 hover:border-purple-200 transition-colors">
                   <div className="flex items-center mb-2">
-                    <div className="bg-purple-100 p-2 rounded-lg mr-3">
-                      <span className="text-sm">📊</span>
+                    <div className="bg-purple-100 p-2 rounded-lg mr-3 shadow-sm animate-pulse">
+                      <span className="text-sm">📺</span>
                     </div>
                     <h3 className="font-semibold text-gray-900">Estado</h3>
                   </div>
@@ -402,8 +493,8 @@ export function TVDetail() {
                 
                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 hover:border-blue-200 transition-colors">
                   <div className="flex items-center mb-2">
-                    <div className="bg-blue-100 p-2 rounded-lg mr-3">
-                      <span className="text-sm">📅</span>
+                    <div className="bg-blue-100 p-2 rounded-lg mr-3 shadow-sm animate-bounce">
+                      <span className="text-sm">🚀</span>
                     </div>
                     <h3 className="font-semibold text-gray-900">Primera Emisión</h3>
                   </div>
@@ -414,8 +505,8 @@ export function TVDetail() {
                 
                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 hover:border-green-200 transition-colors">
                   <div className="flex items-center mb-2">
-                    <div className="bg-green-100 p-2 rounded-lg mr-3">
-                      <span className="text-sm">📺</span>
+                    <div className="bg-green-100 p-2 rounded-lg mr-3 shadow-sm animate-pulse">
+                      <span className="text-sm">🎬</span>
                     </div>
                     <h3 className="font-semibold text-gray-900">Temporadas</h3>
                   </div>
@@ -424,8 +515,8 @@ export function TVDetail() {
                 
                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 hover:border-yellow-200 transition-colors">
                   <div className="flex items-center mb-2">
-                    <div className="bg-yellow-100 p-2 rounded-lg mr-3">
-                      <span className="text-sm">🎬</span>
+                    <div className="bg-yellow-100 p-2 rounded-lg mr-3 shadow-sm animate-bounce">
+                      <span className="text-sm">🎞️</span>
                     </div>
                     <h3 className="font-semibold text-gray-900">Episodios</h3>
                   </div>
@@ -434,8 +525,8 @@ export function TVDetail() {
                 
                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 hover:border-indigo-200 transition-colors">
                   <div className="flex items-center mb-2">
-                    <div className="bg-indigo-100 p-2 rounded-lg mr-3">
-                      <span className="text-sm">⏱️</span>
+                    <div className="bg-indigo-100 p-2 rounded-lg mr-3 shadow-sm animate-pulse">
+                      <span className="text-sm">⏰</span>
                     </div>
                     <h3 className="font-semibold text-gray-900">Duración</h3>
                   </div>
@@ -449,19 +540,31 @@ export function TVDetail() {
 
                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 hover:border-pink-200 transition-colors">
                   <div className="flex items-center mb-2">
-                    <div className="bg-pink-100 p-2 rounded-lg mr-3">
-                      <span className="text-sm">🌍</span>
+                    <div className="bg-pink-100 p-2 rounded-lg mr-3 shadow-sm animate-bounce">
+                      <span className="text-sm">🌐</span>
                     </div>
                     <h3 className="font-semibold text-gray-900">Idioma Original</h3>
                   </div>
                   <p className="text-gray-700 font-medium ml-11">{tvShow.original_language.toUpperCase()}</p>
                 </div>
 
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 hover:border-red-200 transition-colors">
+                  <div className="flex items-center mb-2">
+                    <div className="bg-red-100 p-2 rounded-lg mr-3 shadow-sm animate-pulse">
+                      <span className="text-sm">🗳️</span>
+                    </div>
+                    <h3 className="font-semibold text-gray-900">Votos</h3>
+                  </div>
+                  <p className="text-gray-700 font-medium ml-11">
+                    {tvShow.vote_count.toLocaleString()} votos
+                  </p>
+                </div>
+
                 {tvShow.production_companies.length > 0 && (
                   <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 hover:border-orange-200 transition-colors">
                     <div className="flex items-center mb-3">
-                      <div className="bg-orange-100 p-2 rounded-lg mr-3">
-                        <span className="text-sm">🏢</span>
+                      <div className="bg-orange-100 p-2 rounded-lg mr-3 shadow-sm animate-pulse">
+                        <span className="text-sm">🏭</span>
                       </div>
                       <h3 className="font-semibold text-gray-900">Productoras</h3>
                     </div>
@@ -470,6 +573,26 @@ export function TVDetail() {
                         <div key={company.id} className="bg-white rounded-lg p-2 border border-gray-200">
                           <p className="text-gray-700 text-sm font-medium">
                           {company.name}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {tvShow.production_countries.length > 0 && (
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 hover:border-teal-200 transition-colors">
+                    <div className="flex items-center mb-3">
+                      <div className="bg-teal-100 p-2 rounded-lg mr-3 shadow-sm animate-bounce">
+                        <span className="text-sm">🌍</span>
+                      </div>
+                      <h3 className="font-semibold text-gray-900">Países</h3>
+                    </div>
+                    <div className="space-y-2 ml-11">
+                      {tvShow.production_countries.map((country) => (
+                        <div key={country.iso_3166_1} className="bg-white rounded-lg p-2 border border-gray-200">
+                          <p className="text-gray-700 text-sm font-medium">
+                            {country.name}
                           </p>
                         </div>
                       ))}

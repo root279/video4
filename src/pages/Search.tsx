@@ -39,16 +39,48 @@ export function SearchPage() {
           response = await tmdbService.searchMovies(searchQuery, pageNum);
           break;
         case 'tv':
-          response = await tmdbService.searchTVShows(searchQuery, pageNum);
+          // Buscar tanto series normales como anime
+          const [tvResponse, animeResponse] = await Promise.all([
+            tmdbService.searchTVShows(searchQuery, pageNum),
+            tmdbService.searchAnime(searchQuery, pageNum)
+          ]);
+          
+          // Combinar resultados y eliminar duplicados
+          const combinedResults = [...tvResponse.results, ...animeResponse.results];
+          const uniqueResults = combinedResults.filter((item, index, self) => 
+            index === self.findIndex(t => t.id === item.id)
+          );
+          
+          response = {
+            ...tvResponse,
+            results: uniqueResults,
+            total_results: tvResponse.total_results + animeResponse.total_results
+          };
           break;
         default:
-          response = await tmdbService.searchMulti(searchQuery, pageNum);
+          // Para búsqueda general, incluir anime también
+          const [multiResponse, animeMultiResponse] = await Promise.all([
+            tmdbService.searchMulti(searchQuery, pageNum),
+            tmdbService.searchAnime(searchQuery, pageNum)
+          ]);
+          
+          const allResults = [...multiResponse.results, ...animeMultiResponse.results];
+          const uniqueAllResults = tmdbService.removeDuplicates(allResults);
+          
+          response = {
+            ...multiResponse,
+            results: uniqueAllResults,
+            total_results: multiResponse.total_results + animeMultiResponse.total_results
+          };
       }
 
+      // Ensure no duplicates in final results
+      const finalResults = tmdbService.removeDuplicates(response.results);
+
       if (append) {
-        setResults(prev => [...prev, ...response.results]);
+        setResults(prev => tmdbService.removeDuplicates([...prev, ...finalResults]));
       } else {
-        setResults(response.results);
+        setResults(finalResults);
         setTotalResults(response.total_results);
       }
       
