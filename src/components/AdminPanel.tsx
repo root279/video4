@@ -42,23 +42,14 @@ export function AdminPanel({ isOpen, onClose }: AdminPanelProps) {
   // Backup state
   const [importData, setImportData] = useState('');
 
-  // Manejar notificaciones
-  React.useEffect(() => {
-    const originalShowNotification = showNotification;
-    const enhancedShowNotification = (message: string, type: 'success' | 'info' | 'warning' | 'error') => {
-      const id = Date.now();
-      setNotifications(prev => [...prev, { id, message, type }]);
-      setTimeout(() => {
-        setNotifications(prev => prev.filter(n => n.id !== id));
-      }, 5000);
-    };
-    
-    // Reemplazar temporalmente la función
-    Object.defineProperty(useAdmin(), 'showNotification', {
-      value: enhancedShowNotification,
-      writable: true
-    });
-  }, []);
+  // Local notification handler
+  const displayLocalNotification = (message: string, type: 'success' | 'info' | 'warning' | 'error') => {
+    const id = Date.now();
+    setNotifications(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 5000);
+  };
 
   const removeNotification = (id: number) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
@@ -69,7 +60,7 @@ export function AdminPanel({ isOpen, onClose }: AdminPanelProps) {
   const handlePricingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     updatePricing(pricingForm);
-    showNotification('Configuración de precios actualizada correctamente', 'success');
+    displayLocalNotification('Configuración de precios actualizada correctamente', 'success');
   };
 
   const handleNovelaSubmit = (e: React.FormEvent) => {
@@ -77,13 +68,13 @@ export function AdminPanel({ isOpen, onClose }: AdminPanelProps) {
     if (editingNovela) {
       updateNovela(editingNovela, novelaForm);
       setEditingNovela(null);
-      showNotification('Novela actualizada correctamente', 'success');
+      displayLocalNotification('Novela actualizada correctamente', 'success');
     } else {
       if (novelaForm.titulo && novelaForm.genero && novelaForm.capitulos && novelaForm.año) {
         addNovela(novelaForm as Omit<NovelasConfig, 'id'>);
-        showNotification('Nueva novela agregada al catálogo', 'success');
+        displayLocalNotification('Nueva novela agregada al catálogo', 'success');
       } else {
-        showNotification('Por favor complete todos los campos obligatorios', 'warning');
+        displayLocalNotification('Por favor complete todos los campos obligatorios', 'warning');
         return;
       }
     }
@@ -106,7 +97,7 @@ export function AdminPanel({ isOpen, onClose }: AdminPanelProps) {
   const handleDeleteNovela = (id: number) => {
     if (confirm('¿Está seguro de que desea eliminar esta novela?')) {
       deleteNovela(id);
-      showNotification('Novela eliminada del catálogo', 'info');
+      displayLocalNotification('Novela eliminada del catálogo', 'info');
     }
   };
 
@@ -115,14 +106,14 @@ export function AdminPanel({ isOpen, onClose }: AdminPanelProps) {
     if (editingZone) {
       updateDeliveryZone(editingZone, deliveryForm);
       setEditingZone(null);
-      showNotification('Zona de entrega actualizada correctamente', 'success');
+      displayLocalNotification('Zona de entrega actualizada correctamente', 'success');
     } else {
       if (deliveryForm.name && deliveryForm.fullPath !== undefined && deliveryForm.cost !== undefined) {
         const fullPath = deliveryForm.fullPath || `Santiago de Cuba > Santiago de Cuba > ${deliveryForm.name}`;
         addDeliveryZone({ ...deliveryForm, fullPath } as Omit<DeliveryZoneConfig, 'id'>);
-        showNotification('Nueva zona de entrega agregada', 'success');
+        displayLocalNotification('Nueva zona de entrega agregada', 'success');
       } else {
-        showNotification('Por favor complete todos los campos obligatorios', 'warning');
+        displayLocalNotification('Por favor complete todos los campos obligatorios', 'warning');
         return;
       }
     }
@@ -142,7 +133,7 @@ export function AdminPanel({ isOpen, onClose }: AdminPanelProps) {
   const handleDeleteZone = (id: number) => {
     if (confirm('¿Está seguro de que desea eliminar esta zona de entrega?')) {
       deleteDeliveryZone(id);
-      showNotification('Zona de entrega eliminada', 'info');
+      displayLocalNotification('Zona de entrega eliminada', 'info');
     }
   };
   const handleExport = () => {
@@ -156,16 +147,16 @@ export function AdminPanel({ isOpen, onClose }: AdminPanelProps) {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    showNotification('Configuración JSON exportada correctamente', 'success');
+    displayLocalNotification('Configuración JSON exportada correctamente', 'success');
   };
 
   const handleImport = () => {
     if (importConfig(importData)) {
-      showNotification('Configuración importada y aplicada correctamente', 'success');
+      displayLocalNotification('Configuración importada y aplicada correctamente', 'success');
       setImportData('');
       setPricingForm(state.config.pricing);
     } else {
-      showNotification('Error al importar la configuración. Verifique el formato del archivo.', 'error');
+      displayLocalNotification('Error al importar la configuración. Verifique el formato del archivo.', 'error');
     }
   };
 
@@ -173,7 +164,7 @@ export function AdminPanel({ isOpen, onClose }: AdminPanelProps) {
     if (confirm('¿Está seguro de que desea restaurar la configuración por defecto? Esta acción no se puede deshacer.')) {
       resetToDefaults();
       setPricingForm(state.config.pricing);
-      showNotification('Configuración restaurada a valores por defecto', 'info');
+      displayLocalNotification('Configuración restaurada a valores por defecto', 'info');
     }
   };
 
