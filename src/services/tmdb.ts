@@ -1,10 +1,12 @@
-import { BASE_URL, API_OPTIONS } from '../config/api';
+import { BASE_URL, API_OPTIONS, API_KEY } from '../config/api';
 import type { Movie, TVShow, MovieDetails, TVShowDetails, Video, APIResponse, Genre, Cast, CastMember } from '../types/movie';
 
 class TMDBService {
   private async fetchData<T>(endpoint: string): Promise<T> {
     try {
-      const response = await fetch(`${BASE_URL}${endpoint}`, API_OPTIONS);
+      const separator = endpoint.includes('?') ? '&' : '?';
+      const url = `${BASE_URL}${endpoint}${separator}api_key=${API_KEY}`;
+      const response = await fetch(url, API_OPTIONS);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
