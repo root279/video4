@@ -284,7 +284,9 @@ type AdminAction =
   | { type: 'UPDATE_DELIVERY_ZONE'; payload: DeliveryZoneConfig }
   | { type: 'DELETE_DELIVERY_ZONE'; payload: number }
   | { type: 'TOGGLE_DELIVERY_ZONE'; payload: number }
-  | { type: 'LOAD_CONFIG'; payload: AdminConfig };
+  | { type: 'LOAD_CONFIG'; payload: AdminConfig }
+  | { type: 'LOG_IN' }
+  | { type: 'LOG_OUT' };
 
 const adminReducer = (state: AdminState, action: AdminAction): AdminState => {
   switch (action.type) {
@@ -363,6 +365,16 @@ const adminReducer = (state: AdminState, action: AdminAction): AdminState => {
         ...state,
         config: action.payload
       };
+    case 'LOG_IN':
+      return {
+        ...state,
+        isAuthenticated: true
+      };
+    case 'LOG_OUT':
+      return {
+        ...state,
+        isAuthenticated: false
+      };
     default:
       return state;
   }
@@ -371,6 +383,8 @@ const adminReducer = (state: AdminState, action: AdminAction): AdminState => {
 const AdminContext = createContext<{
   state: AdminState;
   dispatch: React.Dispatch<AdminAction>;
+  login: (username: string, password: string) => boolean;
+  logout: () => void;
 } | undefined>(undefined);
 
 export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -391,12 +405,24 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, []);
 
+  const login = (username: string, password: string): boolean => {
+    if (username === 'admin' && password === 'admin') {
+      dispatch({ type: 'LOG_IN' });
+      return true;
+    }
+    return false;
+  };
+
+  const logout = () => {
+    dispatch({ type: 'LOG_OUT' });
+  };
+
   useEffect(() => {
     localStorage.setItem('adminConfig', JSON.stringify(state.config));
   }, [state.config]);
 
   return (
-    <AdminContext.Provider value={{ state, dispatch }}>
+    <AdminContext.Provider value={{ state, dispatch, login, logout }}>
       {children}
     </AdminContext.Provider>
   );
