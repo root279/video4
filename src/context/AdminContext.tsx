@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import type { AdminConfig, AdminState, NovelasConfig, DeliveryZoneConfig } from '../types/admin';
 
-// ... [resto del código AdminContext con configuración actual aplicada]
 // Configuración por defecto actualizada con valores actuales del sistema
 const defaultConfig: AdminConfig = {
   "pricing": {
@@ -276,4 +275,137 @@ const defaultConfig: AdminConfig = {
   ]
 };
 
-// ... [resto de la implementación del contexto]
+type AdminAction = 
+  | { type: 'UPDATE_PRICING'; payload: AdminConfig['pricing'] }
+  | { type: 'ADD_NOVELA'; payload: NovelasConfig }
+  | { type: 'UPDATE_NOVELA'; payload: NovelasConfig }
+  | { type: 'DELETE_NOVELA'; payload: number }
+  | { type: 'ADD_DELIVERY_ZONE'; payload: DeliveryZoneConfig }
+  | { type: 'UPDATE_DELIVERY_ZONE'; payload: DeliveryZoneConfig }
+  | { type: 'DELETE_DELIVERY_ZONE'; payload: number }
+  | { type: 'TOGGLE_DELIVERY_ZONE'; payload: number }
+  | { type: 'LOAD_CONFIG'; payload: AdminConfig };
+
+const adminReducer = (state: AdminState, action: AdminAction): AdminState => {
+  switch (action.type) {
+    case 'UPDATE_PRICING':
+      return {
+        ...state,
+        config: {
+          ...state.config,
+          pricing: action.payload
+        }
+      };
+    case 'ADD_NOVELA':
+      return {
+        ...state,
+        config: {
+          ...state.config,
+          novelas: [...state.config.novelas, action.payload]
+        }
+      };
+    case 'UPDATE_NOVELA':
+      return {
+        ...state,
+        config: {
+          ...state.config,
+          novelas: state.config.novelas.map(novela =>
+            novela.id === action.payload.id ? action.payload : novela
+          )
+        }
+      };
+    case 'DELETE_NOVELA':
+      return {
+        ...state,
+        config: {
+          ...state.config,
+          novelas: state.config.novelas.filter(novela => novela.id !== action.payload)
+        }
+      };
+    case 'ADD_DELIVERY_ZONE':
+      return {
+        ...state,
+        config: {
+          ...state.config,
+          deliveryZones: [...state.config.deliveryZones, action.payload]
+        }
+      };
+    case 'UPDATE_DELIVERY_ZONE':
+      return {
+        ...state,
+        config: {
+          ...state.config,
+          deliveryZones: state.config.deliveryZones.map(zone =>
+            zone.id === action.payload.id ? action.payload : zone
+          )
+        }
+      };
+    case 'DELETE_DELIVERY_ZONE':
+      return {
+        ...state,
+        config: {
+          ...state.config,
+          deliveryZones: state.config.deliveryZones.filter(zone => zone.id !== action.payload)
+        }
+      };
+    case 'TOGGLE_DELIVERY_ZONE':
+      return {
+        ...state,
+        config: {
+          ...state.config,
+          deliveryZones: state.config.deliveryZones.map(zone =>
+            zone.id === action.payload ? { ...zone, active: !zone.active } : zone
+          )
+        }
+      };
+    case 'LOAD_CONFIG':
+      return {
+        ...state,
+        config: action.payload
+      };
+    default:
+      return state;
+  }
+};
+
+const AdminContext = createContext<{
+  state: AdminState;
+  dispatch: React.Dispatch<AdminAction>;
+} | undefined>(undefined);
+
+export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [state, dispatch] = useReducer(adminReducer, {
+    config: defaultConfig,
+    isAuthenticated: false
+  });
+
+  useEffect(() => {
+    const savedConfig = localStorage.getItem('adminConfig');
+    if (savedConfig) {
+      try {
+        const parsedConfig = JSON.parse(savedConfig);
+        dispatch({ type: 'LOAD_CONFIG', payload: parsedConfig });
+      } catch (error) {
+        console.error('Error loading admin config:', error);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('adminConfig', JSON.stringify(state.config));
+  }, [state.config]);
+
+  return (
+    <AdminContext.Provider value={{ state, dispatch }}>
+      {children}
+    </AdminContext.Provider>
+  );
+};
+
+export const useAdmin = () => {
+  const context = useContext(AdminContext);
+  if (context === undefined) {
+    throw new Error('useAdmin must be used within an AdminProvider');
+  }
+  return context;
+};
