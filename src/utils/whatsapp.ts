@@ -1,4 +1,5 @@
 import { OrderData, CustomerInfo } from '../components/CheckoutModal';
+import { AdminContext } from '../context/AdminContext';
 
 export function sendOrderToWhatsApp(orderData: OrderData): void {
   const { 
@@ -55,7 +56,7 @@ export function sendOrderToWhatsApp(orderData: OrderData): void {
   const currentPrices = getCurrentPrices();
   const transferFeePercentage = currentPrices.transferFeePercentage;
   
-  // Formatear lista de productos con desglose detallado de métodos de pago
+  // Formatear lista de productos con desglose detallado
   const itemsList = items
     .map(item => {
       const seasonInfo = item.selectedSeasons && item.selectedSeasons.length > 0 
@@ -91,7 +92,7 @@ export function sendOrderToWhatsApp(orderData: OrderData): void {
   message += `👤 *DATOS DEL CLIENTE:*\n`;
   message += `• Nombre: ${customerInfo.fullName}\n`;
   message += `• Teléfono: ${customerInfo.phone}\n`;
-  if (!pickupLocation) {
+  message += `• Dirección: ${customerInfo.address}\n`;
     message += `• Dirección: ${customerInfo.address}\n`;
   }
   message += `\n`;
@@ -157,7 +158,7 @@ export function sendOrderToWhatsApp(orderData: OrderData): void {
     }
   } else {
     message += `🚚 *ENTREGA A DOMICILIO:*\n`;
-    message += `• Zona: ${deliveryZone.replace(' > ', ' → ')}\n`;
+    message += `• Zona: ${deliveryZone}\n`;
     message += `• Dirección: ${customerInfo.address}\n`;
     message += `• Costo de entrega: $${deliveryCost.toLocaleString()} CUP\n`;
   }

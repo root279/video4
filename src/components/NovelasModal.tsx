@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { X, Download, MessageCircle, Phone, BookOpen, Info, Check, DollarSign, CreditCard, Calculator, Search, Filter, SortAsc, SortDesc, Smartphone } from 'lucide-react';
 
-// CATÁLOGO DE NOVELAS EMBEBIDO - Generado automáticamente
-const EMBEDDED_NOVELS = [];
+// CATÁLOGO DE NOVELAS EMBEBIDO - Se actualiza automáticamente desde el panel de administración
+let EMBEDDED_NOVELS: any[] = [];
 
-// PRECIOS EMBEBIDOS
-const EMBEDDED_PRICES = {
+// PRECIOS EMBEBIDOS - Se actualizan automáticamente desde el panel de administración
+let EMBEDDED_PRICES = {
   "moviePrice": 80,
   "seriesPrice": 300,
   "transferFeePercentage": 10,
@@ -36,6 +36,22 @@ export function NovelasModal({ isOpen, onClose }: NovelasModalProps) {
   const [selectedYear, setSelectedYear] = useState('');
   const [sortBy, setSortBy] = useState<'titulo' | 'año' | 'capitulos'>('titulo');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // Escuchar actualizaciones de configuración del admin
+  useEffect(() => {
+    const handleConfigUpdate = (event: CustomEvent) => {
+      const config = event.detail;
+      if (config.prices) {
+        EMBEDDED_PRICES = config.prices;
+      }
+      if (config.novels) {
+        EMBEDDED_NOVELS = config.novels;
+      }
+    };
+
+    window.addEventListener('admin_config_updated', handleConfigUpdate as EventListener);
+    return () => window.removeEventListener('admin_config_updated', handleConfigUpdate as EventListener);
+  }, []);
 
   // Get novels and prices from embedded configuration
   const adminNovels = EMBEDDED_NOVELS;
@@ -190,7 +206,7 @@ export function NovelasModal({ isOpen, onClose }: NovelasModalProps) {
         listText += `   📺 Género: ${novela.genero}\n`;
         listText += `   📊 Capítulos: ${novela.capitulos}\n`;
         listText += `   📅 Año: ${novela.año}\n`;
-        listText += `   💰 Costo en efectivo: ${baseCost.toLocaleString()} CUP\n\n`;
+        listText += `   💰 Costo en efectivo: $${baseCost.toLocaleString()} CUP\n\n`;
       });
       
       listText += `\n🏦 PRECIOS CON TRANSFERENCIA BANCARIA (+${transferFeePercentage}%):\n`;
@@ -204,9 +220,9 @@ export function NovelasModal({ isOpen, onClose }: NovelasModalProps) {
         listText += `   📺 Género: ${novela.genero}\n`;
         listText += `   📊 Capítulos: ${novela.capitulos}\n`;
         listText += `   📅 Año: ${novela.año}\n`;
-        listText += `   💰 Costo base: ${baseCost.toLocaleString()} CUP\n`;
-        listText += `   💳 Recargo (${transferFeePercentage}%): +${recargo.toLocaleString()} CUP\n`;
-        listText += `   💰 Costo con transferencia: ${transferCost.toLocaleString()} CUP\n\n`;
+        listText += `   💰 Costo base: $${baseCost.toLocaleString()} CUP\n`;
+        listText += `   💳 Recargo (${transferFeePercentage}%): +$${recargo.toLocaleString()} CUP\n`;
+        listText += `   💰 Costo con transferencia: $${transferCost.toLocaleString()} CUP\n\n`;
       });
       
       listText += "\n📊 RESUMEN DE COSTOS:\n";
@@ -220,11 +236,11 @@ export function NovelasModal({ isOpen, onClose }: NovelasModalProps) {
       listText += `📊 Total de novelas: ${allNovelas.length}\n`;
       listText += `📊 Total de capítulos: ${totalCapitulos.toLocaleString()}\n\n`;
       listText += `💵 CATÁLOGO COMPLETO EN EFECTIVO:\n`;
-      listText += `   💰 Costo total: ${totalEfectivo.toLocaleString()} CUP\n\n`;
+      listText += `   💰 Costo total: $${totalEfectivo.toLocaleString()} CUP\n\n`;
       listText += `🏦 CATÁLOGO COMPLETO CON TRANSFERENCIA:\n`;
-      listText += `   💰 Costo base: ${totalEfectivo.toLocaleString()} CUP\n`;
-      listText += `   💳 Recargo total (${transferFeePercentage}%): +${totalRecargo.toLocaleString()} CUP\n`;
-      listText += `   💰 Costo total con transferencia: ${totalTransferencia.toLocaleString()} CUP\n\n`;
+      listText += `   💰 Costo base: $${totalEfectivo.toLocaleString()} CUP\n`;
+      listText += `   💳 Recargo total (${transferFeePercentage}%): +$${totalRecargo.toLocaleString()} CUP\n`;
+      listText += `   💰 Costo total con transferencia: $${totalTransferencia.toLocaleString()} CUP\n\n`;
     }
     
     listText += "═══════════════════════════════════\n";
@@ -701,7 +717,7 @@ export function NovelasModal({ isOpen, onClose }: NovelasModalProps) {
                                     </div>
                                   )}
                                   <div className="text-xs text-gray-500 mt-1">
-                                    ${novelPricePerChapter} CUP × {novela.capitulos} cap.
+                                    $${novelPricePerChapter} CUP × {novela.capitulos} cap.
                                   </div>
                                 </div>
                               </div>
