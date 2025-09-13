@@ -2,8 +2,8 @@ import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { Toast } from '../components/Toast';
 import type { CartItem } from '../types/movie';
 
-// PRECIOS EMBEBIDOS - Generados automáticamente
-const EMBEDDED_PRICES = {
+// PRECIOS EMBEBIDOS - Se actualizan automáticamente desde el panel de administración
+let EMBEDDED_PRICES = {
   "moviePrice": 80,
   "seriesPrice": 300,
   "transferFeePercentage": 10,
@@ -102,6 +102,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     type: 'success' | 'error';
     isVisible: boolean;
   }>({ message: '', type: 'success', isVisible: false });
+
+  // Escuchar actualizaciones de configuración del admin
+  useEffect(() => {
+    const handleConfigUpdate = (event: CustomEvent) => {
+      const config = event.detail;
+      if (config.prices) {
+        EMBEDDED_PRICES = config.prices;
+      }
+    };
+
+    window.addEventListener('admin_config_updated', handleConfigUpdate as EventListener);
+    return () => window.removeEventListener('admin_config_updated', handleConfigUpdate as EventListener);
+  }, []);
 
   // Clear cart on page refresh
   useEffect(() => {

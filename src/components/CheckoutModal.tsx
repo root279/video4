@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { X, MapPin, User, Phone, Home, CreditCard, DollarSign, MessageCircle, Calculator, Truck, ExternalLink } from 'lucide-react';
 
-// ZONAS DE ENTREGA EMBEBIDAS - Generadas automáticamente
-const EMBEDDED_DELIVERY_ZONES = [];
+// ZONAS DE ENTREGA EMBEBIDAS - Se actualizan automáticamente desde el panel de administración
+let EMBEDDED_DELIVERY_ZONES: any[] = [];
 
-// PRECIOS EMBEBIDOS
-const EMBEDDED_PRICES = {
+// PRECIOS EMBEBIDOS - Se actualizan automáticamente desde el panel de administración
+let EMBEDDED_PRICES = {
   "moviePrice": 80,
   "seriesPrice": 300,
   "transferFeePercentage": 10,
@@ -58,6 +58,22 @@ export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: Che
   const [showLocationMap, setShowLocationMap] = useState(false);
   const [errors, setErrors] = useState<Partial<CustomerInfo>>({});
 
+  // Escuchar actualizaciones de configuración del admin
+  useEffect(() => {
+    const handleConfigUpdate = (event: CustomEvent) => {
+      const config = event.detail;
+      if (config.prices) {
+        EMBEDDED_PRICES = config.prices;
+      }
+      if (config.deliveryZones) {
+        EMBEDDED_DELIVERY_ZONES = config.deliveryZones;
+      }
+    };
+
+    window.addEventListener('admin_config_updated', handleConfigUpdate as EventListener);
+    return () => window.removeEventListener('admin_config_updated', handleConfigUpdate as EventListener);
+  }, []);
+
   // Use embedded delivery zones
   const deliveryZones = EMBEDDED_DELIVERY_ZONES;
 
@@ -94,7 +110,7 @@ export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: Che
       newErrors.phone = 'Formato de teléfono inválido';
     }
 
-    if (!pickupLocation && !customerInfo.address.trim()) {
+    if (!customerInfo.address.trim()) {
       newErrors.address = 'La dirección es requerida para entrega a domicilio';
     }
 
@@ -215,25 +231,23 @@ export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: Che
                   )}
                 </div>
 
-                {!pickupLocation && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Dirección Completa *
-                    </label>
-                    <textarea
-                      value={customerInfo.address}
-                      onChange={(e) => handleInputChange('address', e.target.value)}
-                      rows={3}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${
-                        errors.address ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="Calle, número, entre calles, referencias..."
-                    />
-                    {errors.address && (
-                      <p className="text-red-500 text-sm mt-1">{errors.address}</p>
-                    )}
-                  </div>
-                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Dirección Completa *
+                  </label>
+                  <textarea
+                    value={customerInfo.address}
+                    onChange={(e) => handleInputChange('address', e.target.value)}
+                    rows={3}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${
+                      errors.address ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="Calle, número, entre calles, referencias..."
+                  />
+                  {errors.address && (
+                    <p className="text-red-500 text-sm mt-1">{errors.address}</p>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -244,39 +258,77 @@ export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: Che
                 Opciones de Entrega
               </h3>
               
+              {/* Opción de recogida en el local */}
+              <label
+                className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors mb-3 ${
+                  selectedZone === 'pickup'
+                    ? 'border-green-500 bg-green-50'
+                    : 'border-gray-300 hover:border-green-300'
+                }`}
+              >
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    name="deliveryOption"
+                    value="pickup"
+                    checked={selectedZone === 'pickup'}
+                    onChange={(e) => setSelectedZone(e.target.value)}
+                    className="mr-3 h-4 w-4 text-green-600 focus:ring-green-500"
+                  />
+                  <div>
+                    <p className="font-medium text-gray-900">Recogida en TV a la Carta</p>
+                    <p className="text-sm text-gray-600">Reparto Nuevo Vista Alegre, Santiago de Cuba</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold text-green-600">GRATIS</p>
+                </div>
+              </label>
+
+              {/* Opción de entrega a domicilio */}
+              {deliveryZones.length > 0 && (
+                <div className="mb-3">
+                  <h4 className="font-medium text-gray-900 mb-2">Entrega a Domicilio</h4>
+                  <div className="space-y-2">
+                    {deliveryZones.map((zone) => (
+                      <label
+                        key={zone.id}
+                        className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors ${
+                          selectedZone === zone.name
+                            ? 'border-blue-500 bg-blue-50'
+                            : 'border-gray-300 hover:border-blue-300'
+                        }`}
+                      >
+                        <div className="flex items-center">
+                          <input
+                            type="radio"
+                            name="deliveryOption"
+                            value={zone.name}
+                            checked={selectedZone === zone.name}
+                            onChange={(e) => setSelectedZone(e.target.value)}
+                            className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500"
+                          />
+                          <div>
+                            <p className="font-medium text-gray-900">{zone.name}</p>
+                            <p className="text-sm text-gray-600">Entrega a domicilio</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-blue-600">${zone.cost.toLocaleString()} CUP</p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-3">
-                {allDeliveryOptions.map((option) => (
-                  <label
-                    key={option.id || option.name}
-                    className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors ${
-                      selectedZone === (option.id === 'pickup' ? 'pickup' : option.name)
-                        ? 'border-green-500 bg-green-50'
-                        : 'border-gray-300 hover:border-green-300'
-                    }`}
-                  >
-                    <div className="flex items-center">
-                      <input
-                        type="radio"
-                        name="deliveryOption"
-                        value={option.id === 'pickup' ? 'pickup' : option.name}
-                        checked={selectedZone === (option.id === 'pickup' ? 'pickup' : option.name)}
-                        onChange={(e) => setSelectedZone(e.target.value)}
-                        className="mr-3 h-4 w-4 text-green-600 focus:ring-green-500"
-                      />
-                      <div>
-                        <p className="font-medium text-gray-900">{option.name}</p>
-                        {option.id === 'pickup' && (
-                          <p className="text-sm text-gray-600">Reparto Nuevo Vista Alegre, Santiago de Cuba</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className={`font-semibold ${option.cost === 0 ? 'text-green-600' : 'text-green-600'}`}>
-                        {option.cost === 0 ? 'GRATIS' : `$${option.cost.toLocaleString()} CUP`}
-                      </p>
-                    </div>
-                  </label>
-                ))}
+                {deliveryZones.length === 0 && (
+                  <div className="text-center py-4 text-gray-500">
+                    <p>No hay zonas de entrega configuradas.</p>
+                    <p className="text-sm">Solo está disponible la recogida en el local.</p>
+                  </div>
+                )}
               </div>
 
               {/* Location Map Option */}
@@ -307,18 +359,6 @@ export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: Che
                       </button>
                     </div>
                   </div>
-                </div>
-              )}
-
-              {allDeliveryOptions.length === 1 && (
-                <div className="text-center py-8">
-                  <Truck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Solo disponible recogida en el local
-                  </h3>
-                  <p className="text-gray-600">
-                    Contacta con el administrador para configurar zonas de entrega adicionales.
-                  </p>
                 </div>
               )}
             </div>

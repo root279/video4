@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import JSZip from 'jszip';
 
+// CONFIGURACIÓN EMBEBIDA - Se actualiza automáticamente desde el panel de administración
 // CONFIGURACIÓN EMBEBIDA - Generada automáticamente
 const EMBEDDED_CONFIG = {
   "version": "2.1.0",
@@ -596,6 +597,37 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     broadcastChange({ type: 'novel_delete', data: { id } });
   };
 
+  // Función para actualizar archivos embebidos
+  const updateEmbeddedFiles = async () => {
+    try {
+      // Generar código fuente actualizado con la configuración actual
+      const updatedConfig = {
+        version: state.systemConfig.version,
+        lastExport: new Date().toISOString(),
+        prices: state.prices,
+        deliveryZones: state.deliveryZones,
+        novels: state.novels,
+        settings: state.systemConfig.settings,
+        metadata: state.systemConfig.metadata
+      };
+
+      // Disparar evento para actualizar componentes
+      window.dispatchEvent(new CustomEvent('admin_config_updated', { 
+        detail: updatedConfig 
+      }));
+
+      addNotification({
+        type: 'success',
+        title: 'Configuración actualizada',
+        message: 'Los cambios se han aplicado en toda la aplicación',
+        section: 'Sistema',
+        action: 'update_embedded'
+      });
+    } catch (error) {
+      console.error('Error updating embedded files:', error);
+    }
+  };
+
   const addNotification = (notification: Omit<Notification, 'id' | 'timestamp'>) => {
     dispatch({ type: 'ADD_NOTIFICATION', payload: notification });
   };
@@ -686,10 +718,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       });
 
       // Importar dinámicamente el generador de código fuente
-      try {
-        const { generateCompleteSourceCode } = await import('../utils/sourceCodeGenerator');
+      const { generateCompleteSourceCode } = await import('../utils/sourceCodeGenerator');
         await generateCompleteSourceCode(state.systemConfig);
-      } catch (importError) {
+      
         console.error('Error importing source code generator:', importError);
         throw new Error('No se pudo cargar el generador de código fuente');
       }
@@ -713,6 +744,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       throw error;
     }
   };
+
 
   const importSystemConfig = (config: SystemConfig) => {
     try {
@@ -848,6 +880,13 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       });
     }
   };
+
+  // Actualizar archivos embebidos cuando cambie el estado
+  useEffect(() => {
+    if (state.isAuthenticated) {
+      updateEmbeddedFiles();
+    }
+  }, [state.prices, state.deliveryZones, state.novels]);
 
   return (
     <AdminContext.Provider
