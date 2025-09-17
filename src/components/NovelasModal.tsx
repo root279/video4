@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Download, MessageCircle, Phone, BookOpen, Info, Check, DollarSign, CreditCard, Calculator, Search, Filter, SortAsc, SortDesc, Smartphone } from 'lucide-react';
+import { X, Download, MessageCircle, Phone, BookOpen, Info, Check, DollarSign, CreditCard, Calculator, Search, Filter, SortAsc, SortDesc, Smartphone, FileText, Send } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 interface Novela {
@@ -447,16 +447,16 @@ export function NovelasModal({ isOpen, onClose }: NovelasModalProps) {
                   <div className="flex space-x-4">
                     <button
                       onClick={handleCall}
-                      className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-6 py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center"
+                      className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-4 sm:px-6 py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center text-sm sm:text-base"
                     >
                       <Phone className="h-5 w-5 mr-2" />
                       Llamar
                     </button>
                     <button
                       onClick={handleWhatsApp}
-                      className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white px-6 py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center"
+                      className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white px-4 sm:px-6 py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center text-sm sm:text-base"
                     >
-                      <MessageCircle className="h-5 w-5 mr-2" />
+                      <Send className="h-5 w-5 mr-2" />
                       WhatsApp
                     </button>
                   </div>
@@ -465,26 +465,30 @@ export function NovelasModal({ isOpen, onClose }: NovelasModalProps) {
             </div>
 
             {/* Catalog options */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
               <button
                 onClick={downloadNovelList}
-                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white p-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg flex items-center justify-center"
+                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white p-4 sm:p-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-3"
               >
-                <Download className="h-6 w-6 mr-3" />
-                <div className="text-left">
-                  <div className="text-lg">Descargar Catálogo</div>
-                  <div className="text-sm opacity-90">Lista completa de novelas</div>
+                <div className="bg-white/20 p-3 rounded-full">
+                  <FileText className="h-6 w-6" />
+                </div>
+                <div className="text-center sm:text-left">
+                  <div className="text-base sm:text-lg font-bold">Descargar Catálogo</div>
+                  <div className="text-xs sm:text-sm opacity-90">Lista completa de novelas</div>
                 </div>
               </button>
               
               <button
                 onClick={() => setShowNovelList(!showNovelList)}
-                className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white p-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg flex items-center justify-center"
+                className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white p-4 sm:p-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-3"
               >
-                <BookOpen className="h-6 w-6 mr-3" />
-                <div className="text-left">
-                  <div className="text-lg">Ver y Seleccionar</div>
-                  <div className="text-sm opacity-90">Elegir novelas específicas</div>
+                <div className="bg-white/20 p-3 rounded-full">
+                  <Search className="h-6 w-6" />
+                </div>
+                <div className="text-center sm:text-left">
+                  <div className="text-base sm:text-lg font-bold">Ver y Seleccionar</div>
+                  <div className="text-xs sm:text-sm opacity-90">Elegir novelas específicas</div>
                 </div>
               </button>
             </div>
@@ -800,13 +804,13 @@ export function NovelasModal({ isOpen, onClose }: NovelasModalProps) {
                       <button
                         onClick={sendSelectedNovelas}
                         disabled={selectedNovelas.length === 0}
-                        className={`px-8 py-4 rounded-2xl font-bold transition-all duration-300 transform hover:scale-105 flex items-center justify-center shadow-lg ${
+                        className={`w-full sm:w-auto px-6 sm:px-8 py-4 rounded-2xl font-bold transition-all duration-300 transform hover:scale-105 flex items-center justify-center shadow-lg ${
                           selectedNovelas.length > 0
                             ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white'
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
                       >
-                        <MessageCircle className="h-6 w-6 mr-3" />
+                        <Send className="h-6 w-6 mr-3" />
                         Enviar por WhatsApp
                       </button>
                     </div>

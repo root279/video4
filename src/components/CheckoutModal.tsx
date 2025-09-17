@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, MapPin, User, Phone, Home, CreditCard, DollarSign, MessageCircle, Calculator, Truck, ExternalLink } from 'lucide-react';
+import { X, MapPin, User, Phone, Home, CreditCard, DollarSign, Send, Calculator, Truck, ExternalLink } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 export interface CustomerInfo {
@@ -205,7 +205,7 @@ export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: Che
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <div className="bg-white/20 p-3 rounded-xl mr-4">
-                <MessageCircle className="h-6 w-6" />
+                <Send className="h-6 w-6" />
               </div>
               <div>
                 <h2 className="text-2xl font-bold">Finalizar Pedido</h2>
@@ -458,7 +458,7 @@ export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: Che
               type="submit"
               className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center"
             >
-              <MessageCircle className="h-5 w-5 mr-2" />
+              <Send className="h-5 w-5 mr-2" />
               Enviar Pedido por WhatsApp
             </button>
             
