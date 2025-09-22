@@ -1,13 +1,39 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/unnamed.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+    
+    <!-- Meta tags optimizados para todos los dispositivos y sistemas operativos -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="TV a la Carta" />
+    <meta name="application-name" content="TV a la Carta" />
+    <meta name="msapplication-TileColor" content="#2563eb" />
+    <meta name="theme-color" content="#2563eb" />
+    
+    <!-- Compatibilidad con PWA -->
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="format-detection" content="address=no" />
+    
+    <!-- Optimización para diferentes navegadores -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="renderer" content="webkit" />
+    <meta name="force-rendering" content="webkit" />
+    
+    <!-- Soporte para pantallas de alta densidad -->
+    <meta name="screen-orientation" content="portrait" />
+    <meta name="x5-orientation" content="portrait" />
+    <meta name="x5-fullscreen" content="true" />
+    <meta name="x5-page-mode" content="app" />
+    
     <base href="/" />
     <title>TV a la Carta: Películas y series ilimitadas y mucho más</title>
+    
     <style>
-      /* Deshabilitar zoom y selección de texto */
+      /* Estilos base para máxima compatibilidad multiplataforma */
       * {
         -webkit-user-select: none;
         -moz-user-select: none;
@@ -15,25 +41,47 @@
         user-select: none;
         -webkit-touch-callout: none;
         -webkit-tap-highlight-color: transparent;
+        box-sizing: border-box;
       }
       
       /* Permitir selección de texto solo en inputs y textareas */
       input, textarea, [contenteditable="true"] {
-        -webkit-user-select: text;
-        -moz-user-select: text;
-        -ms-user-select: text;
-        user-select: text;
+        -webkit-user-select: text !important;
+        -moz-user-select: text !important;
+        -ms-user-select: text !important;
+        user-select: text !important;
       }
       
-      /* Deshabilitar zoom en iOS Safari */
+      /* Optimizaciones para diferentes sistemas operativos */
+      html {
+        -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+        touch-action: manipulation;
+        height: 100%;
+        /* Soporte para notch en iOS */
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      }
+      
       body {
         -webkit-text-size-adjust: 100%;
         -ms-text-size-adjust: 100%;
         text-size-adjust: 100%;
         touch-action: manipulation;
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow-x: hidden;
+        /* Optimización para Android */
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        /* Optimización para Windows */
+        font-smooth: always;
+        /* Optimización para macOS */
+        text-rendering: optimizeLegibility;
       }
       
-      /* Prevenir zoom en inputs en iOS */
+      /* Prevenir zoom en iOS Safari y otros navegadores móviles */
       input[type="text"],
       input[type="email"],
       input[type="tel"],
@@ -46,11 +94,237 @@
         -webkit-appearance: none;
         -moz-appearance: none;
         appearance: none;
+        border-radius: 0;
+        /* Optimización específica para iOS */
+        -webkit-border-radius: 8px;
+        /* Optimización específica para Android */
+        background-clip: padding-box;
+      }
+      
+      /* Optimizaciones específicas para diferentes navegadores */
+      
+      /* Chrome y navegadores basados en Chromium */
+      @supports (-webkit-appearance: none) {
+        input, textarea, select {
+          -webkit-appearance: none;
+        }
+      }
+      
+      /* Firefox */
+      @-moz-document url-prefix() {
+        input, textarea, select {
+          -moz-appearance: none;
+        }
+      }
+      
+      /* Safari */
+      @supports (-webkit-backdrop-filter: blur(1px)) {
+        .backdrop-blur {
+          -webkit-backdrop-filter: blur(10px);
+          backdrop-filter: blur(10px);
+        }
+      }
+      
+      /* Edge */
+      @supports (-ms-ime-align: auto) {
+        input, textarea, select {
+          -ms-ime-align: auto;
+        }
+      }
+      
+      /* Optimizaciones para dispositivos táctiles */
+      @media (hover: none) and (pointer: coarse) {
+        button, a, [role="button"] {
+          min-height: 44px;
+          min-width: 44px;
+        }
+      }
+      
+      /* Optimizaciones para pantallas de alta densidad */
+      @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+        img {
+          image-rendering: -webkit-optimize-contrast;
+          image-rendering: crisp-edges;
+        }
+      }
+      
+      /* Animaciones optimizadas para rendimiento */
+      @media (prefers-reduced-motion: no-preference) {
+        .animate-slide-up {
+          animation: slideUp 0.3s ease-out;
+        }
+        
+        @keyframes slideUp {
+          from {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+      }
+      
+      /* Respeto por las preferencias de movimiento reducido */
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+      
+      /* Optimización para modo oscuro del sistema */
+      @media (prefers-color-scheme: dark) {
+        :root {
+          color-scheme: light; /* Forzar modo claro para consistencia */
+        }
+      }
+      
+      /* Soporte para orientación de pantalla */
+      @media screen and (orientation: landscape) {
+        .landscape-optimize {
+          max-height: 90vh;
+        }
+      }
+      
+      @media screen and (orientation: portrait) {
+        .portrait-optimize {
+          max-height: 95vh;
+        }
+      }
+      
+      /* Optimizaciones específicas para diferentes tamaños de pantalla */
+      
+      /* Móviles pequeños */
+      @media screen and (max-width: 375px) {
+        .mobile-small {
+          font-size: 14px;
+          padding: 0.5rem;
+        }
+      }
+      
+      /* Móviles grandes */
+      @media screen and (min-width: 376px) and (max-width: 768px) {
+        .mobile-large {
+          font-size: 16px;
+          padding: 1rem;
+        }
+      }
+      
+      /* Tablets */
+      @media screen and (min-width: 769px) and (max-width: 1024px) {
+        .tablet {
+          font-size: 18px;
+          padding: 1.5rem;
+        }
+      }
+      
+      /* Desktop */
+      @media screen and (min-width: 1025px) {
+        .desktop {
+          font-size: 16px;
+          padding: 2rem;
+        }
+      }
+      
+      /* Pantallas ultra anchas */
+      @media screen and (min-width: 1920px) {
+        .ultra-wide {
+          max-width: 1920px;
+          margin: 0 auto;
+        }
+      }
+      
+      /* Optimizaciones para accesibilidad */
+      @media (prefers-contrast: high) {
+        .high-contrast {
+          filter: contrast(1.2);
+        }
+      }
+      
+      /* Soporte para diferentes densidades de píxeles */
+      @media only screen and (-webkit-min-device-pixel-ratio: 1.5),
+             only screen and (min-device-pixel-ratio: 1.5),
+             only screen and (min-resolution: 144dpi) {
+        .retina-optimize {
+          image-rendering: -webkit-optimize-contrast;
+        }
       }
     </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Script para detectar y optimizar según el dispositivo -->
+    <script>
+      // Detectar capacidades del dispositivo y optimizar
+      (function() {
+        const deviceInfo = {
+          isMobile: window.innerWidth <= 768 || navigator.maxTouchPoints > 0,
+          isTablet: window.innerWidth > 768 && window.innerWidth <= 1024,
+          isDesktop: window.innerWidth > 1024,
+          hasTouch: navigator.maxTouchPoints > 0,
+          isIOS: /iPad|iPhone|iPod/.test(navigator.userAgent),
+          isAndroid: /Android/.test(navigator.userAgent),
+          isWindows: /Windows/.test(navigator.userAgent),
+          isMacOS: /Mac OS X/.test(navigator.userAgent),
+          isLinux: /Linux/.test(navigator.userAgent) && !/Android/.test(navigator.userAgent)
+        };
+        
+        // Agregar clases CSS basadas en el dispositivo
+        const body = document.body;
+        if (deviceInfo.isMobile) body.classList.add('device-mobile');
+        if (deviceInfo.isTablet) body.classList.add('device-tablet');
+        if (deviceInfo.isDesktop) body.classList.add('device-desktop');
+        if (deviceInfo.hasTouch) body.classList.add('has-touch');
+        if (deviceInfo.isIOS) body.classList.add('os-ios');
+        if (deviceInfo.isAndroid) body.classList.add('os-android');
+        if (deviceInfo.isWindows) body.classList.add('os-windows');
+        if (deviceInfo.isMacOS) body.classList.add('os-macos');
+        if (deviceInfo.isLinux) body.classList.add('os-linux');
+        
+        // Optimizar rendimiento según el dispositivo
+        if (deviceInfo.isMobile || deviceInfo.isTablet) {
+          // Optimizaciones para dispositivos móviles
+          document.documentElement.style.setProperty('--animation-duration', '0.2s');
+        } else {
+          // Optimizaciones para desktop
+          document.documentElement.style.setProperty('--animation-duration', '0.3s');
+        }
+        
+        // Guardar información del dispositivo para uso en React
+        window.deviceInfo = deviceInfo;
+      })();
+      
+      // Prevenir zoom con gestos y teclado en todos los navegadores
+      document.addEventListener('gesturestart', function(e) {
+        e.preventDefault();
+      });
+      
+      document.addEventListener('gesturechange', function(e) {
+        e.preventDefault();
+      });
+      
+      document.addEventListener('gestureend', function(e) {
+        e.preventDefault();
+      });
+      
+      // Prevenir zoom con teclado
+      document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '0')) {
+          e.preventDefault();
+        }
+      });
+      
+      // Prevenir zoom con rueda del mouse
+      document.addEventListener('wheel', function(e) {
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+        }
+      }, { passive: false });
+    </script>
   </body>
 </html>

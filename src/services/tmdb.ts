@@ -4,11 +4,307 @@ import { contentFilterService } from './contentFilter';
 import type { Movie, TVShow, MovieDetails, TVShowDetails, Video, APIResponse, Genre, Cast, CastMember } from '../types/movie';
 
 class TMDBService {
-  private readonly FRESH_CONTENT_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes for fresh content
-  private readonly DETAILS_CACHE_DURATION = 60 * 60 * 1000; // 1 hour for details
+  private readonly FRESH_CONTENT_CACHE_DURATION = 15 * 60 * 1000; // 15 minutos para contenido fresco
+  private readonly DETAILS_CACHE_DURATION = 60 * 60 * 1000; // 1 hora para detalles
+  private readonly DAILY_REFRESH_INTERVAL = 24 * 60 * 60 * 1000; // 24 horas
+  private readonly TRENDING_REFRESH_INTERVAL = 6 * 60 * 60 * 1000; // 6 horas para trending
+  
+  private lastDailySync: Date | null = null;
+  private autoSyncInterval: NodeJS.Timeout | null = null;
+
+  constructor() {
+    this.initializeAutoSync();
+  }
+
+  // Inicializar sincronización automática diaria
+  private initializeAutoSync() {
+    // Verificar y sincronizar cada hora
+    this.autoSyncInterval = setInterval(() => {
+      this.checkAndPerformAutoSync();
+    }, 60 * 60 * 1000); // 1 hora
+
+    // Sincronización inicial
+    this.checkAndPerformAutoSync();
+
+    // Sincronización cuando la página vuelve a estar visible
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        this.checkAndPerformAutoSync();
+      }
+    });
+  }
+
+  private async checkAndPerformAutoSync() {
+    const now = new Date();
+    const shouldSync = !this.lastDailySync || 
+                     (now.getTime() - this.lastDailySync.getTime()) > this.DAILY_REFRESH_INTERVAL;
+
+    if (shouldSync) {
+      console.log('Performing automatic daily content sync...');
+      await this.performDailyContentSync();
+      this.lastDailySync = now;
+    }
+  }
+
+  // Sincronización diaria completa de todo el contenido
+  private async performDailyContentSync() {
+    try {
+      console.log('Starting comprehensive daily content sync...');
+      
+      // Limpiar cachés antiguos
+      this.clearExpiredCaches();
+      
+      // Sincronizar todo el contenido en paralelo
+      await Promise.allSettled([
+        // Contenido trending (actualización más frecuente)
+        this.syncTrendingContent(),
+        
+        // Contenido popular
+        this.syncPopularContent(),
+        
+        // Contenido actual (en cartelera/al aire)
+        this.syncCurrentContent(),
+        
+        // Contenido mejor valorado
+        this.syncTopRatedContent(),
+        
+        // Próximos estrenos
+        this.syncUpcomingContent(),
+        
+        // Anime específico
+        this.syncAnimeContent(),
+        
+        // Videos y trailers
+        this.syncVideosForAllContent(),
+        
+        // Géneros
+        this.syncGenres()
+      ]);
+      
+      console.log('Daily content sync completed successfully');
+    } catch (error) {
+      console.error('Error during daily content sync:', error);
+    }
+  }
+
+  // Sincronizar contenido trending con actualización frecuente
+  private async syncTrendingContent() {
+    try {
+      const [trendingDay, trendingWeek, trendingMovies, trendingTV] = await Promise.all([
+        this.getTrendingAll('day', 1),
+        this.getTrendingAll('week', 1),
+        this.getTrendingMovies('day', 1),
+        this.getTrendingTV('day', 1)
+      ]);
+
+      // Almacenar con timestamp para verificación de frescura
+      const timestamp = Date.now();
+      localStorage.setItem('trending_all_day', JSON.stringify({ data: trendingDay, timestamp }));
+      localStorage.setItem('trending_all_week', JSON.stringify({ data: trendingWeek, timestamp }));
+      localStorage.setItem('trending_movies_day', JSON.stringify({ data: trendingMovies, timestamp }));
+      localStorage.setItem('trending_tv_day', JSON.stringify({ data: trendingTV, timestamp }));
+      
+      console.log('Trending content synced successfully');
+    } catch (error) {
+      console.error('Error syncing trending content:', error);
+    }
+  }
+
+  // Sincronizar contenido popular
+  private async syncPopularContent() {
+    try {
+      const [popularMovies, popularTV, popularAnime] = await Promise.all([
+        this.getPopularMovies(1),
+        this.getPopularTVShows(1),
+        this.getAnimeFromMultipleSources(1)
+      ]);
+
+      const timestamp = Date.now();
+      localStorage.setItem('popular_movies', JSON.stringify({ data: popularMovies, timestamp }));
+      localStorage.setItem('popular_tv', JSON.stringify({ data: popularTV, timestamp }));
+      localStorage.setItem('popular_anime', JSON.stringify({ data: popularAnime, timestamp }));
+      
+      console.log('Popular content synced successfully');
+    } catch (error) {
+      console.error('Error syncing popular content:', error);
+    }
+  }
+
+  // Sincronizar contenido actual (en cartelera/al aire)
+  private async syncCurrentContent() {
+    try {
+      const [nowPlayingMovies, airingTodayTV, onTheAirTV] = await Promise.all([
+        this.getNowPlayingMovies(1),
+        this.getAiringTodayTVShows(1),
+        this.getOnTheAirTVShows(1)
+      ]);
+
+      const timestamp = Date.now();
+      localStorage.setItem('now_playing_movies', JSON.stringify({ data: nowPlayingMovies, timestamp }));
+      localStorage.setItem('airing_today_tv', JSON.stringify({ data: airingTodayTV, timestamp }));
+      localStorage.setItem('on_the_air_tv', JSON.stringify({ data: onTheAirTV, timestamp }));
+      
+      console.log('Current content synced successfully');
+    } catch (error) {
+      console.error('Error syncing current content:', error);
+    }
+  }
+
+  // Sincronizar contenido mejor valorado
+  private async syncTopRatedContent() {
+    try {
+      const [topRatedMovies, topRatedTV, topRatedAnime] = await Promise.all([
+        this.getTopRatedMovies(1),
+        this.getTopRatedTVShows(1),
+        this.getTopRatedAnime(1)
+      ]);
+
+      const timestamp = Date.now();
+      localStorage.setItem('top_rated_movies', JSON.stringify({ data: topRatedMovies, timestamp }));
+      localStorage.setItem('top_rated_tv', JSON.stringify({ data: topRatedTV, timestamp }));
+      localStorage.setItem('top_rated_anime', JSON.stringify({ data: topRatedAnime, timestamp }));
+      
+      console.log('Top rated content synced successfully');
+    } catch (error) {
+      console.error('Error syncing top rated content:', error);
+    }
+  }
+
+  // Sincronizar próximos estrenos
+  private async syncUpcomingContent() {
+    try {
+      const upcomingMovies = await this.getUpcomingMovies(1);
+      
+      const timestamp = Date.now();
+      localStorage.setItem('upcoming_movies', JSON.stringify({ data: upcomingMovies, timestamp }));
+      
+      console.log('Upcoming content synced successfully');
+    } catch (error) {
+      console.error('Error syncing upcoming content:', error);
+    }
+  }
+
+  // Sincronizar contenido de anime
+  private async syncAnimeContent() {
+    try {
+      const [popularAnime, topRatedAnime, airingAnime] = await Promise.all([
+        this.getAnimeFromMultipleSources(1),
+        this.getTopRatedAnime(1),
+        this.getDiscoverTVShows({ country: 'JP', genre: 16, sortBy: 'popularity.desc', page: 1 })
+      ]);
+
+      const timestamp = Date.now();
+      localStorage.setItem('anime_popular', JSON.stringify({ data: popularAnime, timestamp }));
+      localStorage.setItem('anime_top_rated', JSON.stringify({ data: topRatedAnime, timestamp }));
+      localStorage.setItem('anime_airing', JSON.stringify({ data: airingAnime, timestamp }));
+      
+      console.log('Anime content synced successfully');
+    } catch (error) {
+      console.error('Error syncing anime content:', error);
+    }
+  }
+
+  // Sincronizar videos y trailers para todo el contenido
+  private async syncVideosForAllContent() {
+    try {
+      // Obtener IDs de todo el contenido popular para sincronizar videos
+      const contentSources = [
+        'popular_movies', 'popular_tv', 'popular_anime',
+        'trending_all_day', 'trending_all_week',
+        'now_playing_movies', 'airing_today_tv', 'on_the_air_tv',
+        'top_rated_movies', 'top_rated_tv', 'upcoming_movies'
+      ];
+
+      const allContentIds: { id: number; type: 'movie' | 'tv' }[] = [];
+
+      contentSources.forEach(source => {
+        try {
+          const cached = localStorage.getItem(source);
+          if (cached) {
+            const { data } = JSON.parse(cached);
+            const results = data.results || data;
+            
+            results.forEach((item: any) => {
+              const type = source.includes('movie') || source.includes('trending') && 'title' in item ? 'movie' : 'tv';
+              allContentIds.push({ id: item.id, type });
+            });
+          }
+        } catch (error) {
+          console.warn(`Error processing ${source} for video sync:`, error);
+        }
+      });
+
+      // Remover duplicados
+      const uniqueContentIds = allContentIds.filter((item, index, self) => 
+        index === self.findIndex(t => t.id === item.id && t.type === item.type)
+      );
+
+      // Sincronizar videos en lotes para evitar sobrecarga
+      const batchSize = 20;
+      const batches = [];
+      for (let i = 0; i < uniqueContentIds.length; i += batchSize) {
+        batches.push(uniqueContentIds.slice(i, i + batchSize));
+      }
+
+      for (const batch of batches) {
+        await this.batchFetchVideos(batch);
+        // Pequeña pausa entre lotes para no sobrecargar la API
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      
+      console.log(`Videos synced for ${uniqueContentIds.length} items`);
+    } catch (error) {
+      console.error('Error syncing videos:', error);
+    }
+  }
+
+  // Sincronizar géneros
+  private async syncGenres() {
+    try {
+      const [movieGenres, tvGenres] = await Promise.all([
+        this.getMovieGenres(),
+        this.getTVGenres()
+      ]);
+
+      const timestamp = Date.now();
+      localStorage.setItem('movie_genres', JSON.stringify({ data: movieGenres, timestamp }));
+      localStorage.setItem('tv_genres', JSON.stringify({ data: tvGenres, timestamp }));
+      
+      console.log('Genres synced successfully');
+    } catch (error) {
+      console.error('Error syncing genres:', error);
+    }
+  }
+
+  // Limpiar cachés expirados
+  private clearExpiredCaches() {
+    const now = Date.now();
+    const keys = Object.keys(localStorage);
+    
+    keys.forEach(key => {
+      if (key.startsWith('fresh_') || key.includes('trending') || key.includes('popular')) {
+        try {
+          const cached = localStorage.getItem(key);
+          if (cached) {
+            const { timestamp } = JSON.parse(cached);
+            const age = now - timestamp;
+            
+            // Limpiar cachés de más de 24 horas
+            if (age > this.DAILY_REFRESH_INTERVAL) {
+              localStorage.removeItem(key);
+              console.log(`Cleared expired cache: ${key}`);
+            }
+          }
+        } catch (error) {
+          // Si hay error parseando, eliminar el cache corrupto
+          localStorage.removeItem(key);
+        }
+      }
+    });
+  }
 
   private async fetchData<T>(endpoint: string, useCache: boolean = true): Promise<T> {
-    // For fresh content, use shorter cache duration
+    // Para contenido fresco, usar caché más corto
     if (endpoint.includes('/popular') || endpoint.includes('/trending') || endpoint.includes('/now_playing')) {
       return this.fetchWithFreshCache<T>(endpoint, useCache);
     }
@@ -16,7 +312,6 @@ class TMDBService {
   }
 
   private async fetchWithFreshCache<T>(endpoint: string, useCache: boolean = true): Promise<T> {
-    // Use a separate cache with shorter duration for fresh content
     const cacheKey = `fresh_${endpoint}`;
     
     if (useCache) {
@@ -63,7 +358,7 @@ class TMDBService {
         return { results: [] } as T;
       }
       
-      // Try to return cached data even if expired
+      // Intentar devolver datos en caché aunque estén expirados
       const cached = localStorage.getItem(cacheKey);
       if (cached) {
         try {
@@ -79,15 +374,14 @@ class TMDBService {
     }
   }
 
-  // Enhanced video fetching with better filtering
+  // Obtener videos con fallback mejorado
   private async getVideosWithFallback(endpoint: string): Promise<{ results: Video[] }> {
     try {
-      // Try Spanish first with error handling
+      // Intentar español primero
       try {
         const spanishVideos = await this.fetchData<{ results: Video[] }>(`${endpoint}?language=es-ES`);
         
         if (spanishVideos.results && spanishVideos.results.length > 0) {
-          // If Spanish videos exist but no trailers, try to combine with English
           const spanishTrailers = spanishVideos.results.filter(
             video => video.site === 'YouTube' && (video.type === 'Trailer' || video.type === 'Teaser')
           );
@@ -103,7 +397,6 @@ class TMDBService {
                 results: [...spanishVideos.results, ...englishTrailers]
               };
             } catch (englishError) {
-              // If English also fails, return Spanish videos
               return spanishVideos;
             }
           }
@@ -111,17 +404,15 @@ class TMDBService {
           return spanishVideos;
         }
       } catch (spanishError) {
-        // If Spanish fails, try English
         console.warn('Spanish videos not available, trying English');
       }
       
-      // Try English as fallback
+      // Fallback a inglés
       try {
         const englishVideos = await this.fetchData<{ results: Video[] }>(`${endpoint}?language=en-US`);
         return englishVideos;
       } catch (englishError) {
         console.warn('English videos not available either');
-        // Return empty results instead of throwing
         return { results: [] };
       }
     } catch (error) {
@@ -130,19 +421,22 @@ class TMDBService {
     }
   }
 
-  // Movies
+  // Movies - Métodos mejorados con sincronización automática
   async getPopularMovies(page: number = 1): Promise<APIResponse<Movie>> {
-    // Get both Spanish and English results for better coverage
-    const [spanishResults, englishResults] = await Promise.all([
+    const [spanishResults, englishResults, nowPlayingResults] = await Promise.all([
       this.fetchData(`/movie/popular?language=es-ES&page=${page}&region=ES`, page === 1),
-      this.fetchData(`/movie/popular?language=en-US&page=${page}&region=US`, page === 1)
+      this.fetchData(`/movie/popular?language=en-US&page=${page}&region=US`, page === 1),
+      this.fetchData(`/movie/now_playing?language=es-ES&page=${page}&region=ES`, page === 1)
     ]);
     
-    // Combine results and remove duplicates, prioritizing Spanish
     const combinedResults = [
       ...spanishResults.results,
       ...englishResults.results.filter(movie => 
         !spanishResults.results.some(spanishMovie => spanishMovie.id === movie.id)
+      ),
+      ...nowPlayingResults.results.filter(movie => 
+        !spanishResults.results.some(spanishMovie => spanishMovie.id === movie.id) &&
+        !englishResults.results.some(englishMovie => englishMovie.id === movie.id)
       )
     ];
     
@@ -172,7 +466,6 @@ class TMDBService {
   }
 
   async getUpcomingMovies(page: number = 1): Promise<APIResponse<Movie>> {
-    // Get upcoming movies from multiple regions for better coverage
     const [spanishResults, englishResults, nowPlayingResults] = await Promise.all([
       this.fetchData(`/movie/upcoming?language=es-ES&page=${page}&region=ES`, page === 1),
       this.fetchData(`/movie/upcoming?language=en-US&page=${page}&region=US`, page === 1),
@@ -196,7 +489,6 @@ class TMDBService {
     };
   }
 
-  // Add method to get now playing movies
   async getNowPlayingMovies(page: number = 1): Promise<APIResponse<Movie>> {
     const [spanishResults, englishResults] = await Promise.all([
       this.fetchData(`/movie/now_playing?language=es-ES&page=${page}&region=ES`, page === 1),
@@ -218,7 +510,6 @@ class TMDBService {
 
   async searchMovies(query: string, page: number = 1): Promise<APIResponse<Movie>> {
     const encodedQuery = encodeURIComponent(query);
-    // Search in both Spanish and English for better coverage
     const [spanishResults, englishResults] = await Promise.all([
       this.fetchData(`/search/movie?query=${encodedQuery}&language=es-ES&page=${page}&include_adult=false`),
       this.fetchData(`/search/movie?query=${encodedQuery}&language=en-US&page=${page}&include_adult=false`)
@@ -238,7 +529,6 @@ class TMDBService {
   }
 
   async getMovieDetails(id: number): Promise<MovieDetails | null> {
-    // Try Spanish first, fallback to English if needed
     try {
       const spanishDetails = await this.fetchData<MovieDetails | null>(`/movie/${id}?language=es-ES&append_to_response=credits,videos,images`, true);
       if (spanishDetails) {
@@ -265,9 +555,8 @@ class TMDBService {
     return credits || { cast: [], crew: [] };
   }
 
-  // TV Shows
+  // TV Shows - Métodos mejorados
   async getPopularTVShows(page: number = 1): Promise<APIResponse<TVShow>> {
-    // Get TV shows from multiple regions and sources
     const [spanishResults, englishResults, airingTodayResults] = await Promise.all([
       this.fetchData(`/tv/popular?language=es-ES&page=${page}&region=ES`, page === 1),
       this.fetchData(`/tv/popular?language=en-US&page=${page}&region=US`, page === 1),
@@ -310,7 +599,6 @@ class TMDBService {
     };
   }
 
-  // Add method to get airing today TV shows
   async getAiringTodayTVShows(page: number = 1): Promise<APIResponse<TVShow>> {
     const [spanishResults, englishResults] = await Promise.all([
       this.fetchData(`/tv/airing_today?language=es-ES&page=${page}&region=ES`, page === 1),
@@ -330,7 +618,6 @@ class TMDBService {
     };
   }
 
-  // Add method to get on the air TV shows
   async getOnTheAirTVShows(page: number = 1): Promise<APIResponse<TVShow>> {
     const [spanishResults, englishResults] = await Promise.all([
       this.fetchData(`/tv/on_the_air?language=es-ES&page=${page}&region=ES`, page === 1),
@@ -352,7 +639,6 @@ class TMDBService {
 
   async searchTVShows(query: string, page: number = 1): Promise<APIResponse<TVShow>> {
     const encodedQuery = encodeURIComponent(query);
-    // Search in both Spanish and English for better coverage
     const [spanishResults, englishResults] = await Promise.all([
       this.fetchData(`/search/tv?query=${encodedQuery}&language=es-ES&page=${page}&include_adult=false`),
       this.fetchData(`/search/tv?query=${encodedQuery}&language=en-US&page=${page}&include_adult=false`)
@@ -372,7 +658,6 @@ class TMDBService {
   }
 
   async getTVShowDetails(id: number): Promise<TVShowDetails | null> {
-    // Try Spanish first, fallback to English if needed
     try {
       const spanishDetails = await this.fetchData<TVShowDetails | null>(`/tv/${id}?language=es-ES&append_to_response=credits,videos,images`, true);
       if (spanishDetails) {
@@ -399,7 +684,7 @@ class TMDBService {
     return credits || { cast: [], crew: [] };
   }
 
-  // Anime (using discover with Japanese origin)
+  // Anime - Métodos mejorados con múltiples fuentes
   async getPopularAnime(page: number = 1): Promise<APIResponse<TVShow>> {
     return this.fetchData(`/discover/tv?with_origin_country=JP&with_genres=16&language=es-ES&page=${page}&sort_by=popularity.desc&include_adult=false`, page === 1);
   }
@@ -413,16 +698,15 @@ class TMDBService {
     return this.fetchData(`/search/tv?query=${encodedQuery}&language=es-ES&page=${page}&with_genres=16&with_origin_country=JP`);
   }
 
-  // Enhanced anime discovery with multiple sources
   async getAnimeFromMultipleSources(page: number = 1): Promise<APIResponse<TVShow>> {
     try {
-      const [japaneseAnime, animationGenre, koreanAnimation] = await Promise.all([
+      const [japaneseAnime, animationGenre, koreanAnimation, chineseAnimation] = await Promise.all([
         this.fetchData<APIResponse<TVShow>>(`/discover/tv?with_origin_country=JP&with_genres=16&language=es-ES&page=${page}&sort_by=popularity.desc&include_adult=false`, page === 1),
         this.fetchData<APIResponse<TVShow>>(`/discover/tv?with_genres=16&language=es-ES&page=${page}&sort_by=popularity.desc&include_adult=false`, page === 1),
-        this.fetchData<APIResponse<TVShow>>(`/discover/tv?with_origin_country=KR&with_genres=16&language=es-ES&page=${page}&sort_by=popularity.desc&include_adult=false`, page === 1)
+        this.fetchData<APIResponse<TVShow>>(`/discover/tv?with_origin_country=KR&with_genres=16&language=es-ES&page=${page}&sort_by=popularity.desc&include_adult=false`, page === 1),
+        this.fetchData<APIResponse<TVShow>>(`/discover/tv?with_origin_country=CN&with_genres=16&language=es-ES&page=${page}&sort_by=popularity.desc&include_adult=false`, page === 1)
       ]);
 
-      // Combine and remove duplicates
       const combinedResults = [
         ...japaneseAnime.results,
         ...animationGenre.results.filter(item => 
@@ -431,6 +715,11 @@ class TMDBService {
         ...koreanAnimation.results.filter(item => 
           !japaneseAnime.results.some(jp => jp.id === item.id) &&
           !animationGenre.results.some(an => an.id === item.id)
+        ),
+        ...chineseAnimation.results.filter(item => 
+          !japaneseAnime.results.some(jp => jp.id === item.id) &&
+          !animationGenre.results.some(an => an.id === item.id) &&
+          !koreanAnimation.results.some(kr => kr.id === item.id)
         )
       ];
 
@@ -444,7 +733,7 @@ class TMDBService {
     }
   }
 
-  // Genres
+  // Géneros
   async getMovieGenres(): Promise<{ genres: Genre[] }> {
     return this.fetchData('/genre/movie/list?language=es-ES', true);
   }
@@ -453,17 +742,15 @@ class TMDBService {
     return this.fetchData('/genre/tv/list?language=es-ES', true);
   }
 
-  // Multi search
+  // Búsqueda múltiple mejorada
   async searchMulti(query: string, page: number = 1): Promise<APIResponse<Movie | TVShow>> {
     const encodedQuery = encodeURIComponent(query);
-    // Enhanced multi-search with better coverage
     const [spanishResults, englishResults, personResults] = await Promise.all([
       this.fetchData(`/search/multi?query=${encodedQuery}&language=es-ES&page=${page}&include_adult=false`),
       this.fetchData(`/search/multi?query=${encodedQuery}&language=en-US&page=${page}&include_adult=false`),
       this.fetchData(`/search/person?query=${encodedQuery}&language=es-ES&page=${page}&include_adult=false`)
     ]);
     
-    // If searching for a person, get their known_for content
     let personContent: (Movie | TVShow)[] = [];
     if (personResults.results.length > 0) {
       personContent = personResults.results.flatMap(person => 
@@ -488,9 +775,8 @@ class TMDBService {
     };
   }
 
-  // Trending content - synchronized with TMDB
+  // Contenido trending con sincronización en tiempo real
   async getTrendingAll(timeWindow: 'day' | 'week' = 'day', page: number = 1): Promise<APIResponse<Movie | TVShow>> {
-    // Get trending from multiple regions for comprehensive coverage
     const [globalTrending, spanishTrending, usTrending] = await Promise.all([
       this.fetchData(`/trending/all/${timeWindow}?page=${page}`, page === 1),
       this.fetchData(`/trending/all/${timeWindow}?language=es-ES&page=${page}&region=ES`, page === 1),
@@ -530,7 +816,7 @@ class TMDBService {
     };
   }
 
-  // Enhanced content discovery methods
+  // Descubrimiento mejorado de contenido
   async getDiscoverMovies(params: {
     genre?: number;
     year?: number;
@@ -571,7 +857,7 @@ class TMDBService {
     };
   }
 
-  // Utility method to remove duplicates from combined results
+  // Utilidades
   removeDuplicates<T extends { id: number }>(items: T[]): T[] {
     const seen = new Set<number>();
     return items.filter(item => {
@@ -583,10 +869,9 @@ class TMDBService {
     });
   }
 
-  // Get fresh trending content for hero carousel (no duplicates)
+  // Contenido hero con sincronización diaria
   async getHeroContent(): Promise<(Movie | TVShow)[]> {
     try {
-      // Get the most current and diverse content for hero
       const [trendingDay, trendingWeek, popularMovies, popularTV, nowPlayingMovies, airingTodayTV] = await Promise.all([
         this.getTrendingAll('day', 1),
         this.getTrendingAll('week', 1),
@@ -596,7 +881,6 @@ class TMDBService {
         this.getAiringTodayTVShows(1)
       ]);
 
-      // Combine and prioritize trending content
       const combinedItems = [
         ...trendingDay.results.slice(0, 6),
         ...trendingWeek.results.slice(0, 4),
@@ -606,7 +890,6 @@ class TMDBService {
         ...popularTV.results.slice(0, 2)
       ];
 
-      // Remove duplicates and return top items
       return contentFilterService.filterContent(this.removeDuplicates(combinedItems)).slice(0, 12);
     } catch (error) {
       console.error('Error fetching hero content:', error);
@@ -614,13 +897,12 @@ class TMDBService {
     }
   }
 
-  // Enhanced search for people and their content
+  // Búsqueda de personas mejorada
   async searchPeople(query: string, page: number = 1): Promise<any> {
     const encodedQuery = encodeURIComponent(query);
     return this.fetchData(`/search/person?query=${encodedQuery}&language=es-ES&page=${page}&include_adult=false`);
   }
 
-  // Get person details and their filmography
   async getPersonDetails(id: number): Promise<any> {
     try {
       const [personDetails, movieCredits, tvCredits] = await Promise.all([
@@ -640,12 +922,10 @@ class TMDBService {
     }
   }
 
-  // Force refresh all cached content
+  // Forzar actualización completa
   async forceRefreshAllContent(): Promise<void> {
-    // Clear all caches
     this.clearCache();
     
-    // Clear fresh content cache
     const keys = Object.keys(localStorage);
     keys.forEach(key => {
       if (key.startsWith('fresh_') || key.includes('trending') || key.includes('popular')) {
@@ -653,10 +933,16 @@ class TMDBService {
       }
     });
     
-    console.log('All content caches cleared, fresh data will be fetched');
+    // Resetear timestamp de sincronización
+    this.lastDailySync = null;
+    
+    // Forzar sincronización inmediata
+    await this.performDailyContentSync();
+    
+    console.log('All content caches cleared and refreshed');
   }
 
-  // Batch fetch videos for multiple items
+  // Obtener videos en lotes
   async batchFetchVideos(items: { id: number; type: 'movie' | 'tv' }[]): Promise<Map<string, Video[]>> {
     const videoMap = new Map<string, Video[]>();
     
@@ -693,12 +979,12 @@ class TMDBService {
     return videoMap;
   }
 
-  // Clear API cache
+  // Limpiar caché
   clearCache(): void {
     apiService.clearCache();
   }
 
-  // Get cache statistics
+  // Estadísticas de caché
   getCacheStats(): { size: number; items: { key: string; age: number }[] } {
     return {
       size: apiService.getCacheSize(),
@@ -706,7 +992,7 @@ class TMDBService {
     };
   }
 
-  // Enhanced sync method for better content freshness
+  // Sincronización completa de todo el contenido
   async syncAllContent(): Promise<{
     movies: Movie[];
     tvShows: TVShow[];
@@ -718,8 +1004,11 @@ class TMDBService {
         popularMovies,
         topRatedMovies,
         upcomingMovies,
+        nowPlayingMovies,
         popularTV,
         topRatedTV,
+        airingTodayTV,
+        onTheAirTV,
         popularAnime,
         topRatedAnime,
         trendingDay,
@@ -728,24 +1017,29 @@ class TMDBService {
         this.getPopularMovies(1),
         this.getTopRatedMovies(1),
         this.getUpcomingMovies(1),
+        this.getNowPlayingMovies(1),
         this.getPopularTVShows(1),
         this.getTopRatedTVShows(1),
+        this.getAiringTodayTVShows(1),
+        this.getOnTheAirTVShows(1),
         this.getAnimeFromMultipleSources(1),
         this.getTopRatedAnime(1),
         this.getTrendingAll('day', 1),
         this.getTrendingAll('week', 1)
       ]);
 
-      // Combine and deduplicate content
       const movies = this.removeDuplicates([
         ...popularMovies.results,
         ...topRatedMovies.results,
-        ...upcomingMovies.results
+        ...upcomingMovies.results,
+        ...nowPlayingMovies.results
       ]);
 
       const tvShows = this.removeDuplicates([
         ...popularTV.results,
-        ...topRatedTV.results
+        ...topRatedTV.results,
+        ...airingTodayTV.results,
+        ...onTheAirTV.results
       ]);
 
       const anime = this.removeDuplicates([
@@ -762,6 +1056,13 @@ class TMDBService {
     } catch (error) {
       console.error('Error syncing all content:', error);
       return { movies: [], tvShows: [], anime: [], trending: [] };
+    }
+  }
+
+  // Destructor para limpiar intervalos
+  destroy() {
+    if (this.autoSyncInterval) {
+      clearInterval(this.autoSyncInterval);
     }
   }
 }

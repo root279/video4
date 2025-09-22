@@ -1,7 +1,7 @@
-# Netlify redirects for SPA routing
+# Netlify redirects for SPA routing - Optimizado para todos los dispositivos
 /*    /index.html   200
 
-# Handle specific routes
+# Handle specific routes para máxima compatibilidad
 /movies    /index.html   200
 /tv        /index.html   200
 /anime     /index.html   200
@@ -9,3 +9,22 @@
 /search    /index.html   200
 /movie/*   /index.html   200
 /tv/*      /index.html   200
+/admin     /index.html   200
+
+# Optimizaciones para diferentes dispositivos
+/mobile/*  /index.html   200
+/tablet/*  /index.html   200
+/desktop/* /index.html   200
+
+# Soporte para PWA
+/manifest.json  /manifest.json  200
+/sw.js         /sw.js          200
+
+# Optimizaciones de caché para diferentes tipos de archivos
+/static/*  /static/*  200  Cache-Control: public,max-age=31536000,immutable
+/assets/*  /assets/*  200  Cache-Control: public,max-age=31536000,immutable
+*.js       *.js       200  Cache-Control: public,max-age=31536000,immutable
+*.css      *.css      200  Cache-Control: public,max-age=31536000,immutable
+*.png      *.png      200  Cache-Control: public,max-age=31536000,immutable
+*.jpg      *.jpg      200  Cache-Control: public,max-age=31536000,immutable
+*.svg      *.svg      200  Cache-Control: public,max-age=31536000,immutable

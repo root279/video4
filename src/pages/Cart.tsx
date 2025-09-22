@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import { AdminContext } from '../context/AdminContext';
 import { PriceCard } from '../components/PriceCard';
 import { CheckoutModal, OrderData, CustomerInfo } from '../components/CheckoutModal';
+import { NovelasModal } from '../components/NovelasModal';
 import { sendOrderToWhatsApp } from '../utils/whatsapp';
 import { IMAGE_BASE_URL, POSTER_SIZE } from '../config/api';
 import type { NovelCartItem } from '../types/movie';
@@ -13,6 +14,7 @@ export function Cart() {
   const { state, removeItem, clearCart, updatePaymentType, calculateItemPrice, calculateTotalPrice, calculateTotalByPaymentType } = useCart();
   const adminContext = React.useContext(AdminContext);
   const [showCheckoutModal, setShowCheckoutModal] = React.useState(false);
+  const [showNovelasModal, setShowNovelasModal] = React.useState(false);
 
   const handleCheckout = (orderData: OrderData) => {
     // Calculate totals
@@ -34,6 +36,10 @@ export function Cart() {
     
     sendOrderToWhatsApp(completeOrderData);
     setShowCheckoutModal(false);
+  };
+
+  const handleOpenNovelas = () => {
+    setShowNovelasModal(true);
   };
 
   const getItemUrl = (item: any) => {
@@ -143,12 +149,12 @@ export function Cart() {
               >
                 Vaciar carrito
               </button>
-              <Link
-                to="/"
+              <button
+                onClick={handleOpenNovelas}
                 className="w-full bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors text-center"
               >
                 Ver Novelas
-              </Link>
+              </button>
             </div>
           </div>
 
@@ -300,6 +306,13 @@ export function Cart() {
                         {item.paymentType === 'transfer' && (
                           <div className="text-xs text-orange-600 font-semibold bg-orange-100 px-2 py-1 rounded-full">
                             +{adminContext?.state?.prices?.transferFeePercentage || 10}% incluido
+                          </div>
+                        )}
+                        {/* Extended series indicator */}
+                        {item.type === 'tv' && 'number_of_episodes' in item && item.number_of_episodes > 50 && (
+                          <div className="inline-flex items-center bg-gradient-to-r from-amber-100 to-orange-100 px-3 py-2 rounded-full border border-amber-300 shadow-sm">
+                            <span className="text-amber-600 mr-1 text-xs">📊</span>
+                            <span className="text-xs font-bold text-amber-700">Serie Extensa</span>
                           </div>
                         )}
                       </div>
@@ -598,6 +611,12 @@ export function Cart() {
             };
           })}
           total={totalPrice}
+        />
+        
+        {/* Modal de Novelas */}
+        <NovelasModal 
+          isOpen={showNovelasModal} 
+          onClose={() => setShowNovelasModal(false)} 
         />
       </div>
     </div>
