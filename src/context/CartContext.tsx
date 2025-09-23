@@ -118,6 +118,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
+    const handleAdminPriceUpdate = (event: CustomEvent) => {
+      setCurrentPrices(event.detail);
+    };
     const handleAdminFullSync = (event: CustomEvent) => {
       if (event.detail.config?.prices) {
         setCurrentPrices(event.detail.config.prices);
@@ -125,6 +128,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     };
 
     window.addEventListener('admin_state_change', handleAdminStateChange as EventListener);
+    window.addEventListener('admin_price_update', handleAdminPriceUpdate as EventListener);
     window.addEventListener('admin_full_sync', handleAdminFullSync as EventListener);
 
     // Check for stored admin config
@@ -142,6 +146,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       window.removeEventListener('admin_state_change', handleAdminStateChange as EventListener);
+      window.removeEventListener('admin_price_update', handleAdminPriceUpdate as EventListener);
       window.removeEventListener('admin_full_sync', handleAdminFullSync as EventListener);
     };
   }, []);

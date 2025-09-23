@@ -1158,9 +1158,17 @@ const EMBEDDED_PRICES = ${JSON.stringify(state.prices, null, 2)};
       } 
     });
 
+    // Broadcast to all components including Home page
     window.dispatchEvent(new CustomEvent('admin_state_change', { 
       detail: changeEvent 
     }));
+    
+    // Also broadcast to cart context for price updates
+    if (change.type === 'prices') {
+      window.dispatchEvent(new CustomEvent('admin_price_update', { 
+        detail: change.data 
+      }));
+    }
   };
 
   const syncWithRemote = async (): Promise<void> => {
