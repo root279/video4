@@ -76,15 +76,6 @@ export function CheckoutModal({ isOpen, onClose, onCheckout, items, total }: Che
             setDeliveryZones(config.deliveryZones);
           }
         }
-        
-        // Also check admin state
-        const adminState = localStorage.getItem('admin_system_state');
-        if (adminState) {
-          const state = JSON.parse(adminState);
-          if (state.deliveryZones) {
-            setDeliveryZones(state.deliveryZones);
-          }
-        }
       } catch (error) {
         console.error('Error loading delivery zones:', error);
       }

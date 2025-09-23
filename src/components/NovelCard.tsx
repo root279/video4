@@ -63,8 +63,7 @@ export function NovelCard({ novel }: NovelCardProps) {
       'Alemania': '🇩🇪',
       'Japón': '🇯🇵',
       'China': '🇨🇳',
-      'Rusia': '🇷🇺',
-      'No especificado': '🌍'
+      'Rusia': '🇷🇺'
     };
     return flags[country] || '🌍';
   };

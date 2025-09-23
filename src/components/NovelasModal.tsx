@@ -53,15 +53,6 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido }: NovelasModal
             setAdminNovels(config.novels);
           }
         }
-        
-        // Also check admin state for real-time updates
-        const adminState = localStorage.getItem('admin_system_state');
-        if (adminState) {
-          const state = JSON.parse(adminState);
-          if (state.novels) {
-            setAdminNovels(state.novels);
-          }
-        }
       } catch (error) {
         console.error('Error loading novels:', error);
       }
