@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Trash2, Star, Calendar, MessageCircle, ArrowLeft, Edit3, Monitor, DollarSign, CreditCard, Calculator, Sparkles, Zap, Heart, Check, X, Clapperboard, Send, BookOpen } from 'lucide-react';
+import { ShoppingCart, Trash2, Star, Calendar, MessageCircle, ArrowLeft, CreditCard as Edit3, Monitor, DollarSign, CreditCard, Calculator, Sparkles, Zap, Heart, Check, X, Clapperboard, Send, BookOpen } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { AdminContext } from '../context/AdminContext';
 import { PriceCard } from '../components/PriceCard';

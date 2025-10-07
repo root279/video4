@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Download, MessageCircle, Phone, BookOpen, Info, Check, DollarSign, CreditCard, Calculator, Search, Filter, SortAsc, SortDesc, Smartphone, FileText, Send, ShoppingCart, Upload, Image, Trash2, Edit, Save, Camera, Globe } from 'lucide-react';
+import { X, Download, BookOpen, Search, Filter, FileText, ShoppingCart, Check, DollarSign, CreditCard, Calculator } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import type { NovelCartItem } from '../types/movie';
 
@@ -128,21 +128,36 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido }: NovelasModal
     }
   }, [adminNovels]);
 
+  const normalizeText = (text: string) => {
+    return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  };
+
+  const improvedSearchFilter = (novela: Novela) => {
+    const searchLower = normalizeText(searchTerm);
+    const titleLower = normalizeText(novela.titulo);
+
+    const words = searchLower.split(/\s+/).filter(word => word.length > 0);
+
+    if (words.length === 0) return true;
+
+    return words.every(word => titleLower.includes(word));
+  };
+
   // Filter novels function
   const getFilteredNovelas = () => {
     let filtered = novelasWithPayment.filter(novela => {
-      const matchesSearch = novela.titulo.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = improvedSearchFilter(novela);
       const matchesGenre = selectedGenre === '' || novela.genero === selectedGenre;
       const matchesYear = selectedYear === '' || novela.año.toString() === selectedYear;
       const matchesCountry = selectedCountry === '' || novela.pais === selectedCountry;
       const matchesStatus = selectedStatus === '' || novela.estado === selectedStatus;
-      
+
       return matchesSearch && matchesGenre && matchesYear && matchesCountry && matchesStatus;
     });
 
     filtered.sort((a, b) => {
       let comparison = 0;
-      
+
       switch (sortBy) {
         case 'titulo':
           comparison = a.titulo.localeCompare(b.titulo);
@@ -157,7 +172,7 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido }: NovelasModal
           comparison = a.pais.localeCompare(b.pais);
           break;
       }
-      
+
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
@@ -367,6 +382,7 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido }: NovelasModal
   const getCountryFlag = (country: string) => {
     const flags: { [key: string]: string } = {
       'Turquía': '🇹🇷',
+      'Cuba': '🇨🇺',
       'México': '🇲🇽',
       'Brasil': '🇧🇷',
       'Colombia': '🇨🇴',
@@ -415,76 +431,6 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido }: NovelasModal
 
         <div className="overflow-y-auto max-h-[calc(95vh-120px)]">
           <div className="p-3 sm:p-6">
-            {/* Main Information */}
-            <div className="bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 rounded-3xl p-4 sm:p-8 mb-6 sm:mb-8 border-2 border-pink-200 shadow-xl">
-              <div className="flex items-center mb-4">
-                <div className="bg-gradient-to-r from-pink-500 to-purple-500 p-3 sm:p-4 rounded-2xl mr-4 shadow-lg">
-                  <Info className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
-                </div>
-                <h3 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-                  Información Importante
-                </h3>
-              </div>
-              
-              <div className="space-y-4 sm:space-y-6 text-gray-800">
-                <div className="flex items-center bg-white/60 backdrop-blur-sm rounded-2xl p-3 sm:p-4 border border-pink-200 shadow-sm">
-                  <div className="bg-gradient-to-r from-blue-400 to-purple-400 p-2 sm:p-3 rounded-xl mr-3 sm:mr-4">
-                    <span className="text-xl sm:text-2xl">📚</span>
-                  </div>
-                  <p className="font-bold text-sm sm:text-lg">Las novelas se encargan completas</p>
-                </div>
-                <div className="flex items-center bg-white/60 backdrop-blur-sm rounded-2xl p-3 sm:p-4 border border-green-200 shadow-sm">
-                  <div className="bg-gradient-to-r from-green-400 to-emerald-400 p-2 sm:p-3 rounded-xl mr-3 sm:mr-4">
-                    <span className="text-xl sm:text-2xl">💰</span>
-                  </div>
-                  <p className="font-bold text-sm sm:text-lg">Costo: ${novelPricePerChapter} CUP por cada capítulo</p>
-                </div>
-                <div className="flex items-center bg-white/60 backdrop-blur-sm rounded-2xl p-3 sm:p-4 border border-orange-200 shadow-sm">
-                  <div className="bg-gradient-to-r from-orange-400 to-red-400 p-2 sm:p-3 rounded-xl mr-3 sm:mr-4">
-                    <span className="text-xl sm:text-2xl">💳</span>
-                  </div>
-                  <p className="font-bold text-sm sm:text-lg">Transferencia bancaria: +{transferFeePercentage}% de recargo</p>
-                </div>
-                <div className="flex items-center bg-white/60 backdrop-blur-sm rounded-2xl p-3 sm:p-4 border border-blue-200 shadow-sm">
-                  <div className="bg-gradient-to-r from-blue-400 to-cyan-400 p-2 sm:p-3 rounded-xl mr-3 sm:mr-4">
-                    <span className="text-xl sm:text-2xl">📱</span>
-                  </div>
-                  <p className="font-bold text-sm sm:text-lg">Para más información, contacta al número:</p>
-                </div>
-              </div>
-
-              {/* Contact number */}
-              <div className="mt-6 sm:mt-8 bg-gradient-to-r from-white to-blue-50 rounded-2xl p-4 sm:p-6 border-2 border-blue-300 shadow-lg">
-                <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
-                  <div className="text-center sm:text-left">
-                    <div className="flex items-center justify-center sm:justify-start mb-2">
-                      <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-2 rounded-lg mr-3">
-                        <Smartphone className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-                      </div>
-                      <p className="text-lg sm:text-xl font-black text-gray-900">{phoneNumber}</p>
-                    </div>
-                    <p className="text-xs sm:text-sm font-semibold text-blue-600 ml-8 sm:ml-10">Contacto directo</p>
-                  </div>
-                  
-                  <div className="flex space-x-3 sm:space-x-4">
-                    <button
-                      onClick={handleCall}
-                      className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center text-sm sm:text-base"
-                    >
-                      <Phone className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                      Llamar
-                    </button>
-                    <button
-                      onClick={handleWhatsApp}
-                      className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center text-sm sm:text-base"
-                    >
-                      <Send className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                      WhatsApp
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
 
             {/* Catalog options */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
@@ -543,7 +489,7 @@ export function NovelasModal({ isOpen, onClose, onFinalizePedido }: NovelasModal
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                       <input
                         type="text"
-                        placeholder="Buscar por título..."
+                        placeholder="Buscar por título (con espacios)..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white shadow-sm"
