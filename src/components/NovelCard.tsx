@@ -34,17 +34,17 @@ export function NovelCard({ novel }: NovelCardProps) {
     if (novel.imagen) {
       return novel.imagen;
     }
-    // Imagen por defecto basada en el género
+    // Imagen por defecto basada en el género (HD quality)
     const genreImages = {
-      'Drama': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=400&fit=crop',
-      'Romance': 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=300&h=400&fit=crop',
-      'Acción': 'https://images.unsplash.com/photo-1489599843253-c76cc4bcb8cf?w=300&h=400&fit=crop',
-      'Comedia': 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=300&h=400&fit=crop',
-      'Familia': 'https://images.unsplash.com/photo-1511895426328-dc8714191300?w=300&h=400&fit=crop'
+      'Drama': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=1200&fit=crop&q=90',
+      'Romance': 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=800&h=1200&fit=crop&q=90',
+      'Acción': 'https://images.unsplash.com/photo-1489599843253-c76cc4bcb8cf?w=800&h=1200&fit=crop&q=90',
+      'Comedia': 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=800&h=1200&fit=crop&q=90',
+      'Familia': 'https://images.unsplash.com/photo-1511895426328-dc8714191300?w=800&h=1200&fit=crop&q=90'
     };
-    
-    return genreImages[novel.genero as keyof typeof genreImages] || 
-           'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=300&h=400&fit=crop';
+
+    return genreImages[novel.genero as keyof typeof genreImages] ||
+           'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800&h=1200&fit=crop&q=90';
   };
 
   const getCountryFlag = (country: string) => {
@@ -109,152 +109,147 @@ export function NovelCard({ novel }: NovelCardProps) {
 
   return (
     <>
-      <div 
-        className={`group relative bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-200 transform ${
-          isHovered 
-            ? 'shadow-md scale-[1.01] -translate-y-0.5' 
-            : 'hover:shadow-md'
+      <div
+        className={`group relative bg-white rounded-xl overflow-hidden transition-all duration-300 transform ${
+          isHovered
+            ? 'shadow-2xl scale-[1.02] -translate-y-1'
+            : 'shadow-md hover:shadow-xl'
         }`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
         {/* Border effect */}
-        <div className={`absolute inset-0 rounded-xl border-2 transition-all duration-200 ${
-          isHovered ? 'border-pink-200' : 'border-transparent'
+        <div className={`absolute inset-0 rounded-xl border-2 transition-all duration-300 z-10 pointer-events-none ${
+          isHovered ? 'border-pink-400' : 'border-transparent'
         }`} />
-        
+
         {/* Status badge */}
-        <div className="absolute top-3 left-3 z-20">
-          <span className={`px-2 py-1 rounded-full text-xs font-bold text-white shadow-lg ${
-            novel.estado === 'transmision' ? 'bg-red-500' : 'bg-green-500'
+        <div className="absolute top-2 left-2 z-20">
+          <span className={`px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-lg backdrop-blur-sm ${
+            novel.estado === 'transmision' ? 'bg-red-500/90' : 'bg-green-500/90'
           }`}>
-            {novel.estado === 'transmision' ? '📡 LIVE' : '✅ COMPLETA'}
+            {novel.estado === 'transmision' ? '📡 EN VIVO' : '✅ COMPLETA'}
           </span>
         </div>
 
         {/* Country flag */}
-        <div className="absolute top-3 right-3 z-20">
-          <span className="bg-black/60 text-white px-2 py-1 rounded-lg text-xs font-medium">
+        <div className="absolute top-2 right-2 z-20">
+          <span className="bg-black/70 backdrop-blur-sm text-white px-2.5 py-1.5 rounded-lg text-sm font-medium shadow-lg">
             {getCountryFlag(novel.pais || 'No especificado')}
           </span>
         </div>
 
-        <div className="relative overflow-hidden">
+        <div className="relative overflow-hidden aspect-[2/3]">
           <OptimizedImage
             src={getNovelImage(novel)}
             alt={novel.titulo}
-            className={`w-full h-80 transition-all duration-200 ${
-              isHovered ? 'scale-102' : ''
+            className={`w-full h-full object-cover transition-all duration-300 ${
+              isHovered ? 'scale-105' : ''
             }`}
             lazy={true}
           />
-          
-          {/* Overlay on hover */}
-          <div className={`absolute inset-0 transition-all duration-200 ${
-            isHovered 
-              ? 'bg-gradient-to-t from-black/20 via-transparent to-transparent' 
-              : 'bg-black/0'
+
+          {/* Overlay gradiente mejorado */}
+          <div className={`absolute inset-0 transition-all duration-300 ${
+            isHovered
+              ? 'bg-gradient-to-t from-black/90 via-black/40 to-transparent'
+              : 'bg-gradient-to-t from-black/70 via-transparent to-transparent'
           }`} />
-          
-          {/* Bottom info overlay */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-            <div className="text-white text-xs">
-              <div className="flex items-center justify-between">
-                <span className="bg-white/20 px-2 py-1 rounded-full text-xs font-medium">
-                  {novel.año}
-                </span>
-                <span className="bg-purple-500/80 px-2 py-1 rounded-full text-xs font-bold">
-                  {novel.capitulos} cap.
-                </span>
-              </div>
+
+          {/* Título superpuesto en la imagen - estilo tvalacarta */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
+            <h3 className={`font-bold text-white mb-2 transition-all duration-300 leading-tight ${
+              isHovered ? 'text-xl' : 'text-lg'
+            }`} style={{
+              textShadow: '2px 2px 8px rgba(0,0,0,0.9), 0 0 15px rgba(0,0,0,0.5)',
+              lineHeight: '1.2'
+            }}>
+              {novel.titulo}
+            </h3>
+
+            {/* Info overlay en la imagen */}
+            <div className="flex items-center justify-between gap-2 mt-2">
+              <span className="bg-white/90 backdrop-blur-sm text-gray-900 px-2.5 py-1 rounded-md text-xs font-bold shadow-md">
+                {novel.año}
+              </span>
+              <span className="bg-pink-500/90 backdrop-blur-sm text-white px-2.5 py-1 rounded-md text-xs font-bold shadow-md">
+                {novel.capitulos} CAP
+              </span>
             </div>
           </div>
         </div>
-        
-        <div className="p-4 relative">
-          <h3 className={`font-semibold text-gray-900 mb-2 line-clamp-2 transition-all duration-200 ${
-            isHovered 
-              ? 'text-pink-700' 
-              : 'text-gray-900'
-          }`}>
-            {novel.titulo}
-          </h3>
-          
-          <div className={`flex items-center text-gray-500 text-sm mb-3 transition-all duration-200 ${
-            isHovered ? 'text-pink-500' : 'text-gray-500'
-          }`}>
-            <Calendar className="h-4 w-4 mr-2" />
-            <span>{novel.año}</span>
-          </div>
-          
-          <div className="flex flex-wrap gap-2 text-xs text-gray-600 mb-4">
-            <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">
+
+        <div className="p-4 relative bg-gradient-to-b from-gray-50 to-white">
+          {/* Género y país */}
+          <div className="flex flex-wrap gap-2 text-xs mb-3">
+            <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full font-bold shadow-sm">
               {novel.genero}
             </span>
-            <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
+            <span className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-3 py-1 rounded-full font-bold shadow-sm">
               {getCountryFlag(novel.pais || 'No especificado')} {novel.pais || 'No especificado'}
             </span>
           </div>
-          
-          <p className="text-gray-600 text-sm line-clamp-2 mb-4">
+
+          {/* Descripción corta */}
+          <p className="text-gray-700 text-sm line-clamp-2 mb-4 leading-relaxed">
             {novel.descripcion || 'Sin descripción disponible'}
           </p>
-          
-          {/* Price display */}
-          <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-3 mb-4 border border-purple-200">
+
+          {/* Price display mejorado */}
+          <div className="bg-gradient-to-br from-purple-100 via-pink-100 to-purple-100 rounded-xl p-3 mb-3 border-2 border-purple-300 shadow-sm">
             <div className="text-center">
-              <div className="text-sm font-bold text-purple-600 mb-1">Precio</div>
-              <div className="text-lg font-bold text-purple-800">
-                ${basePrice.toLocaleString()} CUP
+              <div className="text-xs font-bold text-purple-700 mb-1 uppercase tracking-wide">Precio Total</div>
+              <div className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
+                ${basePrice.toLocaleString()}
               </div>
-              <div className="text-xs text-gray-500">
-                ${currentPrices.novelPricePerChapter} CUP × {novel.capitulos} cap.
+              <div className="text-xs text-gray-600 font-medium mt-1">
+                ${currentPrices.novelPricePerChapter} × {novel.capitulos} cap.
               </div>
             </div>
           </div>
 
-          {/* Add to Cart Button */}
+          {/* Add to Cart Button - Mejorado */}
           <button
             onClick={handleCartAction}
             disabled={isAddingToCart}
-            className={`w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 transform relative overflow-hidden ${
+            className={`w-full px-4 py-3.5 rounded-xl font-bold transition-all duration-300 transform relative overflow-hidden shadow-lg ${
               inCart
-                ? 'bg-green-500 hover:bg-green-600 text-white shadow-sm'
-                : 'bg-pink-500 hover:bg-pink-600 text-white hover:shadow-md'
-            } ${isAddingToCart ? 'scale-95' : 'hover:scale-[1.01]'}`}
+                ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white'
+                : 'bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white'
+            } ${isAddingToCart ? 'scale-95' : 'hover:scale-[1.02] hover:shadow-xl'}`}
           >
             {isAddingToCart && (
-              <div className="absolute inset-0 bg-white/20 animate-pulse" />
+              <div className="absolute inset-0 bg-white/30 animate-pulse" />
             )}
-            
+
             <div className="flex items-center justify-center">
               {inCart ? (
                 <>
-                  <Check className="mr-2 h-4 w-4" />
-                  <span>En el Carrito</span>
-                  <CheckCircle className="ml-2 h-4 w-4 text-green-300" />
+                  <Check className="mr-2 h-5 w-5" />
+                  <span className="text-sm">EN EL CARRITO</span>
+                  <CheckCircle className="ml-2 h-5 w-5" />
                 </>
               ) : isAddingToCart ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  <span>Agregando...</span>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  <span className="text-sm">AGREGANDO...</span>
                 </>
               ) : (
                 <>
-                  <Plus className="mr-2 h-4 w-4" />
-                  <span>Agregar al Carrito</span>
+                  <Plus className="mr-2 h-5 w-5" />
+                  <span className="text-sm">AGREGAR AL CARRITO</span>
                 </>
               )}
             </div>
           </button>
 
-          {/* View Details Link */}
+          {/* View Details Link - Mejorado */}
           <Link
             to={`/novel/${novel.id}`}
-            className="w-full mt-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 border border-gray-300 text-gray-600 hover:border-pink-300 hover:bg-pink-50 hover:text-pink-600 flex items-center justify-center"
+            className="w-full mt-2 px-4 py-2.5 rounded-xl font-bold transition-all duration-300 border-2 border-gray-300 text-gray-700 hover:border-pink-400 hover:bg-gradient-to-r hover:from-pink-50 hover:to-purple-50 hover:text-pink-600 flex items-center justify-center shadow-sm hover:shadow-md"
           >
             <Eye className="mr-2 h-4 w-4" />
-            Ver Detalles
+            <span className="text-sm">VER DETALLES</span>
           </Link>
         </div>
         
