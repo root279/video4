@@ -59,7 +59,7 @@ export function NetflixCarousel({ children, itemsPerView = 5 }: NetflixCarouselP
           {children.map((child, index) => (
             <div
               key={index}
-              className="flex-shrink-0 px-2"
+              className="flex-shrink-0 px-1"
               style={{ width: `${itemWidth}%` }}
             >
               {child}

@@ -307,10 +307,10 @@ export function Home() {
             <>
               {adminState.novels.filter(novel => novel.estado === 'transmision').length > 0 ? (
                 <>
-                  <NetflixCarousel itemsPerView={5}>
+                  <NetflixCarousel itemsPerView={6}>
                     {adminState.novels
                       .filter(novel => novel.estado === 'transmision')
-                      .slice(0, 10)
+                      .slice(0, 12)
                       .map((novel) => (
                         <NovelCard key={`novel-live-${novel.id}`} novel={novel} />
                       ))}
@@ -385,10 +385,10 @@ export function Home() {
             <>
               {adminState.novels.filter(novel => novel.estado === 'finalizada').length > 0 ? (
                 <>
-                  <NetflixCarousel itemsPerView={5}>
+                  <NetflixCarousel itemsPerView={6}>
                     {adminState.novels
                       .filter(novel => novel.estado === 'finalizada')
-                      .slice(0, 10)
+                      .slice(0, 12)
                       .map((novel) => (
                         <NovelCard key={`novel-finished-${novel.id}`} novel={novel} />
                       ))}
